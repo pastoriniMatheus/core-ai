@@ -6,6 +6,11 @@
 //
 //   node scripts/tracker-setup.mjs --projeto <dir> --testar     # so testa o que ja existe
 //
+// Para testar, o token e procurado em tres lugares, nesta ordem:
+//   1. .claude/settings.local.json   (o que o projeto declara)
+//   2. o ambiente                    (o que a sessao herdou)
+//   3. ~/.claude.json                (env de um servidor MCP deste projeto)
+//
 // O token entra por STDIN, nunca por argumento: argv aparece em `ps`, fica no
 // histórico do shell e vaza em log de CI.
 //
@@ -13,9 +18,9 @@
 // verificar produz a pior falha possivel: parece configurado, e o primeiro uso
 // real falha no meio de outra tarefa.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, realpathSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 const args = process.argv.slice(2);
 const flag = (n, d = null) => {
@@ -79,6 +84,42 @@ async function lerStdin() {
   return Buffer.concat(chunks).toString("utf8").trim();
 }
 
+/**
+ * Terceiro lugar onde o token pode morar: o env de um servidor MCP, em
+ * ~/.claude.json. Quem fala com o tracker por MCP nao tem copia da credencial
+ * em .claude/ — e nao deveria ter mesmo: credencial em dois lugares e
+ * credencial que se esquece de rotacionar. Sem esta busca, `--testar` acusa
+ * token ausente num projeto cujo acesso ao tracker funciona perfeitamente, e
+ * um diagnostico que mente sobre uma configuracao boa custa mais caro que a
+ * ausencia dele.
+ *
+ * Procura so no escopo DESTE projeto e no global. Varrer os demais projetos
+ * acharia a credencial de um tracker vizinho e testaria a conexao errada,
+ * devolvendo um OK que nao prova nada sobre o projeto em questao.
+ */
+function tokenDoMcp(nomeVar, projeto) {
+  const home = process.env.HOME || process.env.USERPROFILE;
+  if (!home) return null;
+  const j = readJson(join(home, ".claude.json"));
+  if (!j) return null;
+
+  const chaves = new Set();
+  const abs = resolve(projeto);
+  chaves.add(abs);
+  try { chaves.add(realpathSync(abs)); } catch { /* caminho pode nao existir */ }
+
+  const escopos = [...chaves].map((k) => j.projects?.[k]).filter(Boolean);
+  escopos.push(j); // mcpServers global, fora de qualquer projeto
+
+  for (const escopo of escopos) {
+    for (const [nome, servidor] of Object.entries(escopo?.mcpServers || {})) {
+      const valor = servidor?.env?.[nomeVar];
+      if (valor) return { valor, origem: `env do servidor MCP "${nome}" em ~/.claude.json` };
+    }
+  }
+  return null;
+}
+
 /** Chama a API e devolve o status HTTP. curl porque nao exige dependencia. */
 function testarConexao(url, headers, metodo = "GET", corpo = null) {
   const a = ["-s", "-o", "/dev/null", "-w", "%{http_code}", "-m", "20", "-X", metodo];
@@ -99,13 +140,29 @@ if (SO_TESTAR) {
   if (!cfg?.tracker) erro("este projeto nao tem tracker configurado. Rode sem --testar.");
 
   const t = TRACKERS[cfg.tracker];
-  const token = local?.env?.[cfg.tokenEnv] || process.env[cfg.tokenEnv];
-  if (!token) erro(`${cfg.tokenEnv} nao encontrado em .claude/settings.local.json nem no ambiente`);
+
+  // Ordem deliberada: o que o projeto declara vence o que a sessao herdou.
+  let token = local?.env?.[cfg.tokenEnv];
+  let origem = ".claude/settings.local.json";
+  if (!token && process.env[cfg.tokenEnv]) {
+    token = process.env[cfg.tokenEnv];
+    origem = "ambiente";
+  }
+  if (!token) {
+    const mcp = tokenDoMcp(cfg.tokenEnv, PROJETO);
+    if (mcp) ({ valor: token, origem } = mcp);
+  }
+  if (!token) {
+    erro(
+      `${cfg.tokenEnv} nao encontrado em .claude/settings.local.json, no ambiente, ` +
+        `nem no env de um servidor MCP em ~/.claude.json`
+    );
+  }
 
   const r = testarConexao(t.teste(cfg.url, cfg), t.header(token, cfg), t.metodo || "GET", t.corpo);
   console.log(
     r.ok
-      ? `\n  OK — ${t.nome} respondeu ${r.status}\n`
+      ? `\n  OK — ${t.nome} respondeu ${r.status}   (token: ${origem})\n`
       : `\n  FALHOU — ${r.motivo || `HTTP ${r.status}`}\n`
   );
   process.exit(r.ok ? 0 : 1);
