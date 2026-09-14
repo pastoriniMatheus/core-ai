@@ -76,6 +76,10 @@ Abra o Claude Code na pasta do projeto e rode:
 Ele pergunta o que falta e escreve nos lugares certos. A credencial do tracker
 vai para `.claude/settings.local.json`, **fora do git**.
 
+Num projeto que **já existe**, o roteiro é outro — medir antes, acertar
+`testPatterns` primeiro, ligar por fases:
+[`docs/PROJETO-EM-ANDAMENTO.md`](docs/PROJETO-EM-ANDAMENTO.md).
+
 **Aceite o diálogo de confiança** na primeira abertura de cada projeto. Sem isso
 o Claude Code ignora as regras de permissão e avisa no terminal — os hooks
 funcionam, mas você confirma cada teste na mão.
@@ -251,6 +255,7 @@ por construção, não por disciplina.
 | | |
 |---|---|
 | [`docs/MAQUINA-NOVA.md`](docs/MAQUINA-NOVA.md) | Máquina do zero: pré-requisitos até a primeira guarda funcionando |
+| [`docs/PROJETO-EM-ANDAMENTO.md`](docs/PROJETO-EM-ANDAMENTO.md) | Adotar num projeto que já existe, sem quebrar o fluxo do time |
 | [`docs/manual.html`](docs/manual.html) | O manual completo, para abrir no navegador ou compartilhar |
 | [`docs/PASSO-A-PASSO.md`](docs/PASSO-A-PASSO.md) | Escopos de instalação e o que vai para o git |
 | [`docs/COMECAR.md`](docs/COMECAR.md) | Os testes de aceitação, um a um |

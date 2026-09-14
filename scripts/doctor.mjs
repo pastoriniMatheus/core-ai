@@ -9,6 +9,7 @@
 import { existsSync, readFileSync, statSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, dirname } from "node:path";
+import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -57,6 +58,25 @@ console.log("\nConfiguracao do projeto");
 const settingsPath = join(PROJECT, ".claude", "settings.json");
 const settings = existsSync(settingsPath) ? readJson(settingsPath) : null;
 
+// O plugin instalado no escopo do usuario entrega hooks e skills em TODO projeto,
+// sem escrever nada no settings.json dele. Sem olhar aqui, o diagnostico acusava
+// "nenhum hook ligado" num projeto onde tudo funciona — e um diagnostico que
+// mente e pior que nenhum.
+const pluginInstalado = (() => {
+  try {
+    const reg = JSON.parse(
+      readFileSync(join(homedir(), ".claude", "plugins", "installed_plugins.json"), "utf8")
+    );
+    const entradas = reg.plugins?.["core@agent-core"] || [];
+    const vale = entradas.find(
+      (e) => e.scope === "user" || !e.projectPath || PROJECT.startsWith(e.projectPath)
+    );
+    return vale ? { escopo: vale.scope, versao: vale.version } : null;
+  } catch {
+    return null;
+  }
+})();
+
 // Os hooks do modo local moram no settings.local.json, que fica fora do git —
 // versionar caminho absoluto quebraria o projeto na maquina de qualquer outro.
 const localPath = join(PROJECT, ".claude", "settings.local.json");
@@ -73,11 +93,13 @@ if (!existsSync(settingsPath)) {
   const plugins = Object.keys(settings.enabledPlugins || {});
   plugins.some((p) => p.startsWith("core@"))
     ? OK("plugin core habilitado", plugins.filter((p) => p.startsWith("core@")).join(", "))
-    : WARN("plugin core nao habilitado", 'falta "core@agent-core": true em enabledPlugins');
+    : pluginInstalado
+      ? OK("plugin ativo pelo escopo do usuario", "declarar no projeto so e preciso para a equipe receber ao clonar")
+      : WARN("plugin core nao habilitado", 'falta "core@agent-core": true em enabledPlugins');
 
   Object.keys(settings.extraKnownMarketplaces || {}).length
     ? OK("marketplace declarado", Object.keys(settings.extraKnownMarketplaces).join(", "))
-    : WARN("nenhum marketplace declarado", "a equipe nao vai receber o plugin ao clonar");
+    : WARN("nenhum marketplace declarado", "voce esta coberto pelo escopo do usuario, mas a equipe nao recebe o plugin ao clonar");
 
   const allow = settings.permissions?.allow || [];
   allow.length >= 5
@@ -94,7 +116,10 @@ if (!existsSync(settingsPath)) {
     )
     .map(([evento]) => evento);
 
-  if (eventos.length >= 4) {
+  if (pluginInstalado) {
+    OK(`plugin instalado (escopo ${pluginInstalado.escopo})`,
+       `v${pluginInstalado.versao} — entrega hooks, skills e comandos sem tocar no settings.json do projeto`);
+  } else if (eventos.length >= 4) {
     OK(`hooks do core ligados (${settingsLocal?.hooks ? "settings.local.json" : "settings.json"})`, eventos.join(", "));
     if (settingsLocal?.env?.AGENT_CORE_ROOT) OK("AGENT_CORE_ROOT definido", settingsLocal.env.AGENT_CORE_ROOT);
   } else if (eventos.length) {
@@ -118,8 +143,8 @@ const skillsNoProjeto = (() => {
 })();
 const faltandoSkills = skillsNoNucleo.filter((s) => !skillsNoProjeto.includes(s));
 
-if (Object.keys(settings?.enabledPlugins || {}).some((p) => p.startsWith("core@"))) {
-  OK("skills via plugin do marketplace", `${skillsNoNucleo.length} no nucleo`);
+if (pluginInstalado) {
+  OK("skills via plugin", `${skillsNoNucleo.length}, do plugin instalado`);
 } else if (!faltandoSkills.length && skillsNoNucleo.length) {
   OK("skills instaladas", `${skillsNoProjeto.length} em .claude/skills/`);
 } else if (skillsNoProjeto.length) {
@@ -132,9 +157,13 @@ if (Object.keys(settings?.enabledPlugins || {}).some((p) => p.startsWith("core@"
 const comandosNoProjeto = (() => {
   try { return readdirSync(join(PROJECT, ".claude", "commands")).filter((f) => f.endsWith(".md")); } catch { return []; }
 })();
-comandosNoProjeto.length
-  ? OK("comandos instalados", comandosNoProjeto.map((c) => "/" + c.replace(/\.md$/, "")).join(" "))
-  : WARN("nenhum comando instalado", "/fase, /baseline, /core-doctor e /core-setup nao vao existir");
+if (pluginInstalado) {
+  OK("comandos via plugin");
+} else if (comandosNoProjeto.length) {
+  OK("comandos instalados", comandosNoProjeto.map((c) => "/" + c.replace(/\.md$/, "")).join(" "));
+} else {
+  WARN("nenhum comando instalado", "/core-setup, /core-doctor e /baseline nao vao existir");
+}
 
 const claudeMd = join(PROJECT, "CLAUDE.md");
 if (!existsSync(claudeMd)) {
