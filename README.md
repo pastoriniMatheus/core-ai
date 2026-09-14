@@ -1,176 +1,236 @@
 # agent-core
 
-Nucleo de diretrizes de agente para Claude Code. Base generica; cada projeto
-adiciona sua camada por cima, sem misturar.
+Diretrizes de agente para Claude Code organizadas por **mecanismo de execução**,
+não por ferramenta: tudo que pode virar hook vira hook, e só o que sobra vira
+instrução no prompt.
 
-## Documentacao
+Skills são conselho — o modelo pode ignorar. Hooks são controle.
 
-| | |
+---
+
+# Instalação
+
+## Dois comandos, uma vez por máquina
+
+```bash
+claude plugin marketplace add https://github.com/pastoriniMatheus/core-ai.git
+claude plugin install core@agent-core
+```
+
+> **Use a URL completa.** Com o atalho `pastoriniMatheus/core-ai`, o Claude Code
+> clona por SSH (`git@github.com:…`) e falha em máquina sem chave configurada —
+> o caso de toda instalação nova. Com `https://`, ele usa a credencial do `gh`.
+
+Confira:
+
+```bash
+claude plugin details core@agent-core
+```
+
+```
+Skills (9)   baseline, ci-local, core-doctor, core-setup, economia-de-contexto,
+             entregar-trabalho, extrair-skill, fase, mapear-codigo
+Hooks (4)    PostToolUse, PreToolUse, Stop, SessionStart  (harness-only)
+Always-on:   ~874 tok   added to every session
+```
+
+**Pronto.** As guardas e as skills já valem em **qualquer projeto** desta máquina.
+Você não precisa clonar este repositório.
+
+<details>
+<summary><b>Máquina do zero?</b> Node, Claude Code e <code>gh auth</code> primeiro</summary>
+
+```bash
+# 1. Node 18+  →  nodejs.org  (o Claude Code vem por npm, então vem antes)
+node --version
+
+# 2. Claude Code
+npm install -g @anthropic-ai/claude-code
+claude --version        # faça o login na primeira execução
+
+# 3. GitHub CLI  →  cli.github.com
+gh auth login           # escolha HTTPS e aceite configurar as credenciais do git
+```
+
+O repositório é privado. Antes de seguir, isto tem de listar refs **sem pedir senha**:
+
+```bash
+git ls-remote https://github.com/pastoriniMatheus/core-ai.git
+```
+
+Passo a passo completo em [`docs/MAQUINA-NOVA.md`](docs/MAQUINA-NOVA.md).
+
+</details>
+
+## Configurar cada projeto
+
+O plugin traz hooks e skills. O que ele **não** sabe é o comando de teste do seu
+projeto, a branch base e o tracker.
+
+Abra o Claude Code na pasta do projeto e rode:
+
+```
+/core-setup
+```
+
+Ele pergunta o que falta e escreve nos lugares certos. A credencial do tracker
+vai para `.claude/settings.local.json`, **fora do git**.
+
+**Aceite o diálogo de confiança** na primeira abertura de cada projeto. Sem isso
+o Claude Code ignora as regras de permissão e avisa no terminal — os hooks
+funcionam, mas você confirma cada teste na mão.
+
+## Prove em 30 segundos
+
+Peça ao agente, dentro de um projeto:
+
+> Adicione a dependência lodash usando npm install.
+
+Ele tem de ser **bloqueado** com a escada da preguiça. Se instalar direto, algo
+não ligou — rode `claude plugin details core@agent-core`.
+
+## Referência rápida
+
+| Situação | Comando |
 |---|---|
-| [`docs/MAQUINA-NOVA.md`](docs/MAQUINA-NOVA.md) | **Comece aqui numa maquina do zero** — pre-requisitos ate a primeira guarda funcionando |
-| [`docs/manual.html`](docs/manual.html) | O manual completo, para abrir no navegador ou publicar para a equipe |
-| [`docs/PASSO-A-PASSO.md`](docs/PASSO-A-PASSO.md) | Como instalar e provar que funciona |
-| [`docs/COMECAR.md`](docs/COMECAR.md) | Os testes de aceitacao, um a um |
-| [`docs/FERRAMENTAS.md`](docs/FERRAMENTAS.md) | Ponytail, mattpocock, Graphify, notebooklm — e a armadilha de cada uma |
+| Ver o que está instalado | `claude plugin list` |
+| Inventário e custo em tokens | `claude plugin details core@agent-core` |
+| Atualizar para a versão nova | `claude plugin marketplace update agent-core` |
+| Desligar temporariamente | `claude plugin disable core@agent-core` |
+| Remover | `claude plugin uninstall core@agent-core` |
 
-O manual e gerado com `python scripts/atualizar-manual.py`, que **le os numeros da
-suite em vez de aceita-los digitados**: se algum teste falhar, ele se recusa a
-atualizar. Um numero errado no documento que a equipe le vale menos que nenhum.
+**Cuidado:** `marketplace remove` **desinstala o plugin junto**. Para desligar sem
+perder, use `disable`.
 
-## O problema que resolve
+Quando uma guarda atrapalhar num repositório que você só foi ler, desligue **só
+ela**, naquele projeto, em `.claude/core.json`:
 
-Diretrizes de agente costumam ser escritas como um texto grande no `CLAUDE.md`
-mandando o modelo se comportar. Isso falha por tres motivos:
+```json
+{ "depGuard": { "enabled": false } }
+```
 
-1. **O `CLAUDE.md` entra no prompt em todo turno.** Procedimento detalhado ali e
-   pago sempre para ser util as vezes.
-2. **Instrucao e probabilistica.** O modelo obedece quase sempre. "Quase" e onde
-   moram os erros que chegam em producao.
+---
+
+# O que ele faz
+
+## O problema
+
+Diretrizes de agente costumam ser um texto grande no `CLAUDE.md` mandando o
+modelo se comportar. Falha por três motivos:
+
+1. **O `CLAUDE.md` entra no prompt em todo turno.** Procedimento detalhado ali é
+   pago sempre para ser útil às vezes.
+2. **Instrução é probabilística.** O modelo obedece quase sempre. "Quase" é onde
+   moram os erros que chegam em produção.
 3. **Duas autoridades de processo se anulam.** Quando um texto manda entrevistar
-   ate exaurir duvidas e outro manda entregar e calar a boca, o agente oscila.
+   até exaurir dúvidas e outro manda entregar e calar a boca, o agente oscila.
 
-O nucleo organiza as diretrizes por **mecanismo de execucao**, nao por ferramenta:
+## Quatro camadas, por mecanismo
 
 | Camada | Mecanismo | Ataca |
 |---|---|---|
-| 0 | hooks + permissoes | erro |
-| 1 | `CLAUDE.md` enxuto, `CONTEXT.md`, grafo | alucinacao |
+| 0 | hooks + permissões | erro |
+| 1 | `CLAUDE.md` enxuto, `CONTEXT.md`, grafo | alucinação |
 | 2 | uma autoridade de processo + skills | desalinhamento |
 | 3 | roteamento de modelo, subagentes | custo |
 
-Regra: **tudo que puder descer de camada, desce.** Se vira hook, nao vira instrucao.
+Regra: **tudo que puder descer de camada, desce.**
 
 ## Camada 0 — o que executa sozinho
 
 | Hook | Evento | O que garante |
 |---|---|---|
-| `post-edit-verify` | `Edit` `Write` `MultiEdit` | Arquivo editado passa pelo linter da linguagem. Reprovou, o erro volta ao agente |
-| `pre-bash-guard` | `Bash` | Dependencia nova exige subir a escada antes. Grafo desatualizado avisa antes de mentir |
-| `stop-verify` | `Stop` | Codigo alterado sem teste rodado depois nao encerra a sessao |
-| `pre-publish-guard` | `Bash` e `mcp__*` | PR ou card sem permissao explicita do usuario nao passa — **pelos dois caminhos**. Estado final do card e bloqueio **sem escape** |
-| `session-start` | `SessionStart` | Projeto sem configuracao avisa na primeira sessao, em vez de rodar meio-mudo em silencio |
+| `post-edit-verify` | `Edit` `Write` `MultiEdit` `Bash` | O arquivo escrito passa pelo linter — por ferramenta **ou por shell** |
+| `pre-bash-guard` | `Bash` | Dependência nova exige subir a escada. Grafo desatualizado avisa antes de mentir |
+| `pre-publish-guard` | `Bash` e `mcp__*` | PR ou card sem permissão explícita não passa, **pelos dois caminhos**. Estado final do card é bloqueio **sem escape** |
+| `stop-verify` | `Stop` | Código alterado sem teste rodado depois não encerra a sessão |
+| `session-start` | `SessionStart` | Projeto sem configuração avisa, em vez de rodar meio-mudo em silêncio |
 
-Autodeteccao por linguagem: Ruby, JS/TS, Python, Go, PHP, Shell, Swift, Kotlin,
-JSON e YAML. Ferramenta ausente = hook silencioso, nunca hook quebrado — a
-existencia do binario e checada ANTES de rodar, porque um comando ausente sob
-shell nao produz ENOENT e seria confundido com "o linter reprovou".
+Autodetecção: Ruby, JS/TS, Python, Go, PHP, Shell, Swift, Kotlin, JSON e YAML.
+Ferramenta ausente = hook silencioso, nunca hook quebrado — a existência do
+binário é checada **antes** de rodar, porque um comando ausente sob shell não
+produz `ENOENT` e seria confundido com "o linter reprovou".
 
-**Rust, Java, C# e Scala nao tem verificacao por arquivo confiavel** (o compilador
-precisa do projeto inteiro). Elas sao cobertas no outro extremo: `stopVerify.projectCheck`
-roda o build/typecheck completo UMA vez, antes de encerrar a sessao.
+**Rust, Java, C# e Scala não têm verificação por arquivo confiável** (o compilador
+precisa do projeto inteiro). São cobertas no outro extremo: `stopVerify.projectCheck`
+roda o build completo **uma vez**, antes de encerrar.
+
+## Portão de publicação: Bash e MCP
+
+Um hook só de `Bash` deixaria passar livre qualquer tracker acessado por MCP —
+que costuma ser o caminho preferido.
+
+| Caminho | Inspecionado | Como autorizar |
+|---|---|---|
+| Bash | o comando | prefixo `CORE_PUBLISH_OK=1` |
+| MCP | `<ferramenta> <argumentos>` | token one-shot em `.claude/core-state/publish-ok` |
+
+Numa chamada MCP não há onde prefixar um marcador. Por isso a autorização vira um
+arquivo criado logo antes, **consumido no uso** e válido por poucos minutos — uma
+autorização, uma publicação, que é a semântica de "por PR e por card".
 
 ## Skills
 
-| Skill | Para que |
+| Skill | Para quê |
 |---|---|
-| `fase` | Maquina EXPLORAR -> ALINHAR -> IMPLEMENTAR -> PROVAR. Elimina o conflito entre regimes |
-| `mapear-codigo` | Grafo para relacao, busca para texto, leitura para conteudo. Evita o mapa velho |
-| `economia-de-contexto` | O que delegar a subagente, qual modelo por tarefa, onde cada instrucao mora |
+| `fase` | EXPLORAR → ALINHAR → IMPLEMENTAR → PROVAR. Elimina o conflito entre regimes |
+| `mapear-codigo` | Grafo para relação, busca para texto, leitura para conteúdo. Evita o mapa velho |
+| `economia-de-contexto` | O que delegar a subagente, qual modelo por tarefa, onde cada instrução mora |
 | `extrair-skill` | Transforma conhecimento do time em skill versionada |
-| `entregar-trabalho` | O contrato de entrega: permissao por PR e por card, prova do caminho real, comentario com link |
-| `ci-local` | Monta um verificador que roda na maquina em segundos, em vez de esperar CI externo |
+| `entregar-trabalho` | Permissão por PR e por card, prova do caminho real, comentário com link |
+| `ci-local` | Verificador que roda na máquina em segundos, em vez de esperar CI externo |
 
 ## Comandos
 
-`/fase` `/baseline` `/core-doctor` `/core-setup`
+`/core-setup` `/core-doctor` `/baseline`
 
-## Instalar num projeto
+---
 
-**Primeira vez? Siga [`docs/COMECAR.md`](docs/COMECAR.md)** — dez minutos, com os
-quatro testes de aceitacao que provam que cada guarda esta ligada.
+# Desenvolver o núcleo
+
+Só necessário para **editar**, não para usar.
 
 ```bash
-node scripts/preflight.mjs /caminho/do/projeto   # o que a maquina precisa
-node scripts/install.mjs   /caminho/do/projeto   # modo local: funciona na hora
-node scripts/doctor.mjs    /caminho/do/projeto   # confirma que os hooks ligaram
+git clone https://github.com/pastoriniMatheus/core-ai.git
+cd core-ai
+node tests/hooks.test.mjs              # 90 casos, segundos
+node scripts/aceitacao.mjs --offline   # instalação e guardas
+node scripts/aceitacao.mjs             # + sessões reais do Claude Code, ~10 min
 ```
 
-Dois modos de instalacao:
+**`aceitacao.mjs` é o teste que importa.** Cria um projeto descartável, instala o
+núcleo e pede ao agente exatamente o que cada guarda deveria barrar — numa sessão
+de verdade. O veredito vem da **contagem de bloqueios no transcript**, não da
+resposta do agente: ele pode recusar por outro motivo. É a diferença entre
+"parece que funcionou" e "funcionou".
+
+Para testar alterações locais antes de publicar, instale por caminho:
+
+```bash
+node scripts/preflight.mjs /caminho/do/projeto   # o que a máquina precisa
+node scripts/install.mjs   /caminho/do/projeto   # aponta para este clone
+node scripts/doctor.mjs    /caminho/do/projeto   # confirma
+```
 
 | Modo | Comando | Quando |
 |---|---|---|
-| **local** (padrao) | `install.mjs <projeto>` | Testar e usar na sua maquina. Os hooks apontam para o caminho deste repo — funciona sem publicar nada |
-| **marketplace** | `install.mjs <projeto> --marketplace --repo ORG/agent-core` | Distribuir para a equipe. Exige o repositorio publicado |
+| plugin | `claude plugin install core@agent-core` | uso normal, e para a equipe |
+| local | `install.mjs <projeto>` | desenvolver o núcleo; hooks apontam para este clone |
+| global | `install.mjs --global` | as guardas em todo projeto, sem publicar |
 
-Depois de instalar, abra o projeto no Claude Code **interativamente uma vez** e
-aceite o dialogo de confianca: sem isso as 48 regras de `permissions.allow` sao
-ignoradas. Os hooks rodam de qualquer forma.
-
-Na primeira sessao dentro do projeto, o hook `session-start` detecta o que ainda
-nao foi configurado e pede `/core-setup` — que pergunta tracker, credencial,
-comando de teste e branch base.
-
-**Credencial nunca entra no `.claude/core.json`**, que e versionado. O `core.json`
-guarda o *nome* da variavel de ambiente; o valor vai para `.claude/settings.local.json`,
-que o instalador ja acrescenta ao `.gitignore`.
-
-Aditivo: mescla `permissions.allow`, nunca sobrescreve configuracao existente sem
-`--force`. Rodar duas vezes nao duplica nada.
-
-## Portao de publicacao: Bash e MCP
-
-Um hook so de `Bash` deixaria passar livre qualquer tracker acessado por **MCP** —
-que costuma ser o caminho preferido. O guard inspeciona os dois:
-
-| Caminho | O que e inspecionado | Como autorizar |
-|---|---|---|
-| Bash | o comando | prefixo `CORE_PUBLISH_OK=1` |
-| MCP | `<nome da ferramenta> <argumentos>` | token one-shot em `.claude/core-state/publish-ok` |
-
-Numa chamada MCP nao ha onde prefixar um marcador: o schema da ferramenta e fixo.
-Por isso a autorizacao vira um arquivo criado logo antes, **consumido no uso** e
-valido por poucos minutos — uma autorizacao, uma publicacao, que e exatamente a
-semantica de "por PR e por card".
-
-O bloqueio do estado final vale nos dois caminhos, e nos dois **sem escape**.
-
-## Primeira vez num projeto
-
-```bash
-node scripts/preflight.mjs /caminho/do/projeto
-```
-
-Detecta a stack pelos manifestos (`go.mod`, `package.json`, `Gemfile`,
-`pyproject.toml`, `Cargo.toml`), confere quais binarios estao instalados, separa
-o que **bloqueia** do que e apenas desejavel, e imprime o `core.json` sugerido
-ja pronto.
-
-Evita a classe de erro mais irritante que existe: o agente tenta rodar a suite,
-o binario nao existe, e ele depura o projeto por vinte minutos quando o problema
-era a maquina.
-
-A skill `ci-local` usa isso para montar um verificador unico do projeto — um
-comando que encadeia formato, build, lint e teste, parando no primeiro que falhar.
+O instalador é **aditivo**: mescla `permissions.allow`, preserva hooks de outras
+ferramentas, não sobrescreve uma skill sua de mesmo nome, e rodar duas vezes não
+duplica nada.
 
 ## Medir
 
 ```bash
-node scripts/baseline.mjs --days 7 --save antes    # ANTES de mudar qualquer coisa
-node scripts/baseline.mjs --days 7 --compare antes # depois
+node scripts/baseline.mjs --days 7 --save antes     # ANTES de mudar o fluxo
+node scripts/baseline.mjs --days 7 --compare antes  # depois
 ```
 
-Sem numero de partida, nao ha como saber se uma mudanca ajudou — so a sensacao
-de que ajudou.
-
-## Testar
-
-```bash
-node tests/hooks.test.mjs        # unidade: 73 casos, segundos
-node scripts/aceitacao.mjs       # ponta a ponta: cria projeto, instala, roda sessoes reais
-node scripts/aceitacao.mjs --offline   # so instalacao e guardas (rapido)
-```
-
-**`aceitacao.mjs` e o teste que importa.** Ele cria um projeto descartavel,
-instala o nucleo, e pede ao agente exatamente o que cada guarda deveria barrar —
-numa sessao de verdade do Claude Code. O veredito nao sai da resposta do agente
-(ele pode recusar por outro motivo) e sim da **contagem de bloqueios registrados
-no transcript**. E a diferenca entre "parece que funcionou" e "funcionou".
-
-Unica dependencia: Node 18+, que ja vem com o Claude Code. O projeto de teste e
-JavaScript puro com `node --test` — nao exige Go, Ruby nem Python.
-
-Hook errado e pior que hook nenhum: bloqueia trabalho legitimo e o time desliga
-tudo na primeira semana.
+Sem número de partida não há como saber se uma mudança ajudou — só a sensação de
+que ajudou.
 
 ## Adicionar uma camada de projeto
 
@@ -181,19 +241,33 @@ O projeto habilita o que precisa:
 { "enabledPlugins": { "core@agent-core": true, "<nome>@agent-core": true } }
 ```
 
-Um projeto que nao habilita uma camada nao enxerga as skills dela. Isolamento por
-construcao, nao por disciplina.
+Um projeto que não habilita uma camada **não enxerga** as skills dela. Isolamento
+por construção, não por disciplina.
+
+---
+
+# Documentação
+
+| | |
+|---|---|
+| [`docs/MAQUINA-NOVA.md`](docs/MAQUINA-NOVA.md) | Máquina do zero: pré-requisitos até a primeira guarda funcionando |
+| [`docs/manual.html`](docs/manual.html) | O manual completo, para abrir no navegador ou compartilhar |
+| [`docs/PASSO-A-PASSO.md`](docs/PASSO-A-PASSO.md) | Escopos de instalação e o que vai para o git |
+| [`docs/COMECAR.md`](docs/COMECAR.md) | Os testes de aceitação, um a um |
+| [`docs/FERRAMENTAS.md`](docs/FERRAMENTAS.md) | Ponytail, mattpocock, Graphify, notebooklm — e a armadilha de cada uma |
+
+O manual é gerado por `python scripts/atualizar-manual.py`, que **lê os números da
+suíte em vez de aceitá-los digitados** e se recusa a atualizar se algum teste
+falhar. Um número errado no documento que a equipe lê vale menos que nenhum.
 
 ## Ferramentas externas
 
-O nucleo **nao instala** Ponytail, mattpocock/skills, Graphify nem notebooklm-py.
-Ele e a arquitetura que as recebe — e funciona sozinho sem nenhuma delas.
-Comandos de instalacao e as armadilhas de cada uma em [`docs/FERRAMENTAS.md`](docs/FERRAMENTAS.md).
+O núcleo **não instala** Ponytail, mattpocock/skills, Graphify nem notebooklm-py.
+Ele é a arquitetura que as recebe — e funciona sozinho sem nenhuma delas.
 
-O `doctor.mjs` relata quais estao presentes, e acusa erro se **duas autoridades
-de processo** estiverem habilitadas ao mesmo tempo.
+O `doctor.mjs` relata quais estão presentes, e **acusa erro se duas autoridades de
+processo** estiverem habilitadas ao mesmo tempo.
 
 ## Requisitos
 
-Node 18+ — ja presente em qualquer maquina que rode o Claude Code. Os hooks nao
-tem nenhuma outra dependencia.
+Node 18+, que já vem com o Claude Code. Os hooks não têm nenhuma outra dependência.
