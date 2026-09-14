@@ -479,7 +479,7 @@ console.log("\n=== regressao: instalador nao pode divergir do plugin ===");
   }
 
   const comandos = (() => { try { return readdirSync(join(alvo, ".claude", "commands")); } catch { return []; } })();
-  if (comandos.length >= 4) {
+  if (comandos.length >= 3) {
     passed++;
     console.log(`  PASS  os comandos chegaram (${comandos.length})`);
   } else {

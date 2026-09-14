@@ -154,9 +154,22 @@ apontando para ele:
 node ~/caminho/do/agent-core/scripts/install.mjs ~/meu-projeto --marketplace --repo pastoriniMatheus/core-ai
 ```
 
-Aí o `.claude/settings.json` versionado declara o plugin, e quem clonar recebe
-hooks e skills automaticamente — sem precisar do repositório do núcleo na
-máquina.
+O `.claude/settings.json` versionado **declara** o plugin. Mas declarar não
+instala: cada pessoa roda estes dois comandos uma vez, dentro do projeto.
+
+```bash
+claude plugin marketplace add pastoriniMatheus/core-ai
+claude plugin install core@agent-core
+```
+
+Medido no repositório privado real: o marketplace é clonado por SSH (a
+autenticação do `git` basta, não precisa configurar nada) e o plugin passa a
+entregar hooks, skills e comandos em qualquer projeto — **sem** precisar do
+repositório do núcleo na máquina.
+
+Custo declarado pela própria ferramenta (`claude plugin details core@agent-core`):
+**~928 tokens sempre presentes** por sessão, que são as descrições das skills.
+O corpo de cada uma só carrega quando é invocada.
 
 ---
 

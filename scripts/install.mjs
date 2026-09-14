@@ -303,8 +303,14 @@ Proximos passos:
      Sem isso as regras de permissions.allow sao ignoradas (os hooks rodam
      de qualquer jeito, mas voce continua confirmando comando de rotina).
 ${MODO_MARKETPLACE ? `
-  5. Revise .claude/settings.json e faca commit — e ele que propaga tudo
-     isso para a equipe quando alguem clonar o repositorio.` : `
+  5. O settings.json DECLARA o plugin, mas declarar nao instala. Cada dev
+     roda uma vez, dentro do projeto:
+
+       claude plugin marketplace add ${REPO}
+       claude plugin install core@agent-core
+
+     Depois disso o Claude Code carrega hooks, skills e comandos sozinho.
+     Faca commit do .claude/settings.json para que a declaracao chegue a eles.` : `
   5. Setup LOCAL: os hooks vivem em .claude/settings.local.json, fora do git.
      O que e versionavel (permissoes, skills, comandos) vai no settings.json.
      Para distribuir a equipe, reinstale com --marketplace depois de publicar.`}
