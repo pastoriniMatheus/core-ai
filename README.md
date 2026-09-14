@@ -7,6 +7,7 @@ adiciona sua camada por cima, sem misturar.
 
 | | |
 |---|---|
+| [`docs/MAQUINA-NOVA.md`](docs/MAQUINA-NOVA.md) | **Comece aqui numa maquina do zero** — pre-requisitos ate a primeira guarda funcionando |
 | [`docs/manual.html`](docs/manual.html) | O manual completo, para abrir no navegador ou publicar para a equipe |
 | [`docs/PASSO-A-PASSO.md`](docs/PASSO-A-PASSO.md) | Como instalar e provar que funciona |
 | [`docs/COMECAR.md`](docs/COMECAR.md) | Os testes de aceitacao, um a um |

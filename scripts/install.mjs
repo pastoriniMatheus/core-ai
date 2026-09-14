@@ -306,7 +306,7 @@ ${MODO_MARKETPLACE ? `
   5. O settings.json DECLARA o plugin, mas declarar nao instala. Cada dev
      roda uma vez, dentro do projeto:
 
-       claude plugin marketplace add ${REPO}
+       claude plugin marketplace add https://github.com/${REPO}.git
        claude plugin install core@agent-core
 
      Depois disso o Claude Code carrega hooks, skills e comandos sozinho.

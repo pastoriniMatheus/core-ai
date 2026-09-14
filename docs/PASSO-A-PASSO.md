@@ -158,12 +158,15 @@ O `.claude/settings.json` versionado **declara** o plugin. Mas declarar não
 instala: cada pessoa roda estes dois comandos uma vez, dentro do projeto.
 
 ```bash
-claude plugin marketplace add pastoriniMatheus/core-ai
+claude plugin marketplace add https://github.com/pastoriniMatheus/core-ai.git
 claude plugin install core@agent-core
 ```
 
-Medido no repositório privado real: o marketplace é clonado por SSH (a
-autenticação do `git` basta, não precisa configurar nada) e o plugin passa a
+**Use a URL completa.** Com o atalho `pastoriniMatheus/core-ai` o Claude Code
+clona por SSH e falha em máquina sem chave configurada; com `https://` ele usa a
+credencial do `gh`. Testado com o SSH deliberadamente desabilitado.
+
+Medido no repositório privado real: o plugin passa a
 entregar hooks, skills e comandos em qualquer projeto — **sem** precisar do
 repositório do núcleo na máquina.
 
