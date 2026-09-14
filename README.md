@@ -201,7 +201,7 @@ autorização, uma publicação, que é a semântica de "por PR e por card".
 
 ## Comandos
 
-`/core-setup` `/core-tracker` `/core-doctor` `/baseline`
+`/core-setup` `/core-tracker` `/core-ferramentas` `/core-doctor` `/baseline`
 
 ## Trabalhar um card
 
@@ -305,11 +305,42 @@ falhar. Um número errado no documento que a equipe lê vale menos que nenhum.
 
 ## Ferramentas externas
 
-O núcleo **não instala** Ponytail, mattpocock/skills, Graphify nem notebooklm-py.
-Ele é a arquitetura que as recebe — e funciona sozinho sem nenhuma delas.
+O núcleo funciona sozinho. As ferramentas abaixo acrescentam capacidades, e um
+comando instala e configura todas:
 
-O `doctor.mjs` relata quais estão presentes, e **acusa erro se duas autoridades de
-processo** estiverem habilitadas ao mesmo tempo.
+```
+/core-ferramentas
+```
+
+| Ferramenta | Papel | Onde roda |
+|---|---|---|
+| **Ponytail** | escrever o mínimo de código | local (plugin) |
+| **Graphify** | grafo: quem chama o quê, o que quebra se mudar | **local ou servidor MCP** — o comando pergunta |
+| **notebooklm-py** | base de conhecimento externa | local, opcional |
+| ~~mattpocock/skills~~ | — | **não entra** |
+
+**O Pocock não entra** porque o núcleo passou a cobrir o mesmo terreno: `fase`
+faz o alinhamento, `atacar-card` conduz a implementação, `entregar-trabalho`
+fecha a entrega — as três escritas a partir das skills do próprio time. Instalar
+por cima criaria duas autoridades de processo disputando cada decisão, que é o
+erro que este núcleo existe para eliminar.
+
+**Graphify local × MCP.** O padrão é local: o grafo vive em `graphify-out/`, fora
+do git, e o hook post-commit o reconstrói a cada commit. Zero infra. O modo MCP
+serve um time inteiro de um servidor só — compensa quando o build fica lento num
+repositório grande, ao custo de mais uma peça para manter e de alguém precisar
+reconstruir o grafo a cada push. A configuração do modo MCP é escrita mesmo antes
+do servidor existir: quando ele subir, troca-se a URL e nada mais muda.
+
+O grafo é construído com `--code-only`: parsing local por tree-sitter, **nada sai
+da máquina**. Sem esse flag, documentos e PDFs do repositório vão para o LLM
+configurado — num projeto com contrato de cliente, é a diferença entre local e
+vazamento.
+
+**Obsidian ficou de fora**, por decisão: `CONTEXT.md` e `docs/` já fazem o papel
+de conhecimento versionado, e um vault separado seria mais uma coisa para manter
+em sincronia. Quem quiser o grafo navegável tem `graphify . --obsidian`, que é um
+flag e não uma ferramenta a mais.
 
 ## Requisitos
 
