@@ -197,10 +197,34 @@ autorização, uma publicação, que é a semântica de "por PR e por card".
 | `extrair-skill` | Transforma conhecimento do time em skill versionada |
 | `entregar-trabalho` | Permissão por PR e por card, prova do caminho real, comentário com link |
 | `ci-local` | Verificador que roda na máquina em segundos, em vez de esperar CI externo |
+| `atacar-card` | Do identificador à entrega: busca o card, conduz as seis fases, para no portão |
 
 ## Comandos
 
 `/core-setup` `/core-tracker` `/core-doctor` `/baseline`
+
+## Trabalhar um card
+
+Configure o tracker uma vez com `/core-tracker` e depois, em qualquer projeto:
+
+> ataque CRM-540
+
+A skill `atacar-card` busca o card, conduz as seis fases (fixar o terreno,
+investigar, decidir, implementar, provar, publicar) e **para no portão** pedindo
+sua autorização antes da PR e antes de mover o card.
+
+Funciona com **Plane, Linear, Jira e GitHub Issues** — nada na skill sabe o nome
+de nenhuma empresa. Trocar de tracker é trocar uma linha de configuração.
+
+```bash
+# o que a skill usa por baixo
+node $AGENT_CORE_ROOT/scripts/tracker.mjs --projeto . card CRM-540
+echo "texto" | node $AGENT_CORE_ROOT/scripts/tracker.mjs --projeto . comment CRM-540 -
+```
+
+Buscar e comentar passam livres. **Mover o card é interceptado** — inclusive
+quando feito por este script, que é parte do núcleo: uma ferramenta que fura a
+própria guarda é o jeito mais fácil de destruir o sistema.
 
 ---
 

@@ -95,6 +95,12 @@ export const DEFAULTS = {
     // Exemplos: "api.linear.app", "plane[.]exemplo[.]com/api", "/rest/api/3/issue"
     trackerPatterns: [],
 
+    // O proprio script do nucleo TEM de passar pelo portao. Ele fala com a API
+    // do tracker sem a URL aparecer no comando, entao `trackerPatterns` nao o
+    // alcanca — e uma ferramenta que contorna a propria guarda e o jeito mais
+    // facil de furar o sistema inteiro. Sempre ativo, nao configuravel.
+    sempreTracker: ["tracker[.]mjs[^|;&]* move "],
+
     // Um hook so de Bash deixaria passar livre qualquer tracker acessado por
     // MCP — que e o caminho preferido. Estes padroes casam contra
     // "<nome da ferramenta> <argumentos em JSON>".
