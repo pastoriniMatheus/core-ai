@@ -61,6 +61,7 @@ run(async (input) => {
 
   const ehPR = bate(cfg.publish.prPatterns, texto) || (ehMcp && bate(cfg.publish.mcpPrPatterns, texto));
   const ehTracker =
+    bate(cfg.publish.sempreTracker, texto) ||
     (cfg.publish.trackerPatterns.length && bate(cfg.publish.trackerPatterns, texto)) ||
     (ehMcp && bate(cfg.publish.mcpTrackerPatterns, texto));
 
@@ -68,7 +69,11 @@ run(async (input) => {
   // Fechar um card e o julgamento de quem revisou o trabalho, e essa pessoa
   // nao e o agente. Este e o unico bloqueio do nucleo que nao aceita
   // autorizacao: nem o usuario pedindo torna a acao do agente.
-  if (ehTracker && bate(cfg.publish.forbiddenStates.map((s) => `["' :=]${s}["',}]`), texto)) {
+  // O delimitador final aceita fim de string: num comando de shell o estado é o
+  // último argumento (`move CRM-540 Done`) e não há caractere depois dele —
+  // exigir um deixava o bloqueio mais importante do núcleo passar batido.
+  const estadoProibido = cfg.publish.forbiddenStates.map((s) => `["' :=]${s}(["',}]|\\s|$)`);
+  if (ehTracker && bate(estadoProibido, texto)) {
     denyTool(
       `[core] Este comando parece mover um card para "${cfg.publish.doneState}".\n\n` +
         `Fechar um card e o julgamento de quem revisou o trabalho — nunca do agente,\n` +

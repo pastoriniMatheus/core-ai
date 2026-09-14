@@ -149,6 +149,38 @@ check("so documentacao -> passa", "stop-verify.mjs", { cwd: TMP, transcript_path
 check("stop_hook_active evita loop", "stop-verify.mjs", { cwd: TMP, transcript_path: editouSemTestar, stop_hook_active: true }, "pass");
 check("sem transcript passa", "stop-verify.mjs", { cwd: TMP }, "pass");
 
+console.log("\n=== regressao: o proprio tracker.mjs passa pelo portao ===");
+// Criar uma ferramenta que fura a propria guarda e o jeito mais facil de
+// destruir o sistema. O script fala com a API sem a URL aparecer no comando,
+// entao `trackerPatterns` nao o alcancava — e `move ... Done` passava livre.
+{
+  const dir = join(TMP, "trk");
+  mkdirSync(join(dir, ".claude"), { recursive: true });
+  writeFileSync(
+    join(dir, ".claude", "core.json"),
+    JSON.stringify({ publish: { tracker: "plane", trackerPatterns: ["p[.]exemplo[.]com"] } })
+  );
+  const cmd = (c) => ({ cwd: dir, transcript_path: editouETestou, tool_input: { command: c } });
+
+  check("tracker.mjs move -> nega", "pre-publish-guard.mjs",
+    cmd('node scripts/tracker.mjs --projeto . move CRM-540 "In Review"'), "deny");
+  check("tracker.mjs move autorizado -> passa", "pre-publish-guard.mjs",
+    cmd('CORE_PUBLISH_OK=1 node scripts/tracker.mjs --projeto . move CRM-540 "In Review"'), "pass");
+  check("tracker.mjs card (leitura) -> passa", "pre-publish-guard.mjs",
+    cmd("node scripts/tracker.mjs --projeto . card CRM-540"), "pass");
+  check("tracker.mjs comment -> passa", "pre-publish-guard.mjs",
+    cmd("node scripts/tracker.mjs --projeto . comment CRM-540 -"), "pass");
+
+  // Estado final no FIM do comando: o padrao exigia um delimitador depois, e
+  // num comando de shell nao ha caractere algum apos o ultimo argumento.
+  check("move Done no fim do comando -> nega", "pre-publish-guard.mjs",
+    cmd("node scripts/tracker.mjs --projeto . move CRM-540 Done"), "deny");
+  check("move Done autorizado -> nega mesmo assim", "pre-publish-guard.mjs",
+    cmd("CORE_PUBLISH_OK=1 node scripts/tracker.mjs --projeto . move CRM-540 Done"), "deny");
+  check("move concluido no fim -> nega", "pre-publish-guard.mjs",
+    cmd("node scripts/tracker.mjs --projeto . move CRM-540 concluido"), "deny");
+}
+
 console.log("\n=== regressao: escrita por SHELL nao pode escapar ===");
 // Encontrado rodando o nucleo numa sessao real: o agente resolveu a tarefa
 // inteira por PowerShell, sem tocar em Edit/Write, e nenhum hook viu nada.
