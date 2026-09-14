@@ -73,8 +73,22 @@ Abra o Claude Code na pasta do projeto e rode:
 /core-setup
 ```
 
-Ele pergunta o que falta e escreve nos lugares certos. A credencial do tracker
-vai para `.claude/settings.local.json`, **fora do git**.
+Ele pergunta o que falta e escreve nos lugares certos.
+
+Para ligar o tracker (Plane, Linear, Jira, GitHub Issues), há um comando próprio:
+
+```
+/core-tracker
+```
+
+Pergunta a URL e o token, **testa a conexão de verdade** e só então grava — o
+token em `.claude/settings.local.json`, fora do git. Se o teste falhar, nada é
+gravado: credencial que parece configurada e falha no primeiro uso real é pior
+que credencial ausente.
+
+E ele **recusa gravar** se o `.gitignore` do repositório não cobrir o arquivo —
+inclusive quando a proteção vem só de uma regra global da sua máquina, porque no
+clone de um colega o token ficaria commitável.
 
 Num projeto que **já existe**, o roteiro é outro — medir antes, acertar
 `testPatterns` primeiro, ligar por fases:
@@ -186,7 +200,7 @@ autorização, uma publicação, que é a semântica de "por PR e por card".
 
 ## Comandos
 
-`/core-setup` `/core-doctor` `/baseline`
+`/core-setup` `/core-tracker` `/core-doctor` `/baseline`
 
 ---
 
