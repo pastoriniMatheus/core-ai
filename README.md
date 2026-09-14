@@ -235,7 +235,7 @@ Só necessário para **editar**, não para usar.
 ```bash
 git clone https://github.com/pastoriniMatheus/core-ai.git
 cd core-ai
-node tests/hooks.test.mjs              # 90 casos, segundos
+node tests/hooks.test.mjs              # 97 casos, segundos
 node scripts/aceitacao.mjs --offline   # instalação e guardas
 node scripts/aceitacao.mjs             # + sessões reais do Claude Code, ~10 min
 ```

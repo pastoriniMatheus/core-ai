@@ -26,8 +26,11 @@ passaram, falharam = m.group(1), m.group(2)
 if falharam != "0":
     sys.exit(f"a suite tem {falharam} falha(s) — corrija antes de atualizar o manual")
 
-s = s.replace("85/85 unidade", f"{passaram}/{passaram} unidade")
-s = s.replace(">85 / 85<", f">{passaram} / {passaram}<")
+antes = s
+s = re.sub(r"\d+/\d+ unidade", f"{passaram}/{passaram} unidade", s)
+s = re.sub(r">\d+ / \d+<", f">{passaram} / {passaram}<", s)
+if s == antes and f"{passaram}/{passaram}" not in s:
+    sys.exit("nao encontrei onde atualizar o numero de testes no manual")
 
 # --- secao de instalacao ---------------------------------------------------
 if 'id="instalar-escopo"' not in s:
@@ -129,6 +132,13 @@ if "<body>" not in corpo:
     sys.exit("nao achei onde abrir o <body> — o fragmento mudou de forma")
 
 io.open("docs/manual.html", "w", encoding="utf-8").write(RESET + corpo + "\n</body>\n</html>\n")
+
+# O README carrega o mesmo numero e estava ficando para tras a cada rodada.
+readme = io.open("README.md", encoding="utf-8").read()
+novo = re.sub(r"# \d+ casos, segundos", f"# {passaram} casos, segundos", readme)
+if novo != readme:
+    io.open("README.md", "w", encoding="utf-8").write(novo)
+    print(f"README.md          {passaram} casos")
 
 print(f"manual atualizado: {passaram} testes")
 print("  docs/manual.src.html  fragmento (fonte para publicar)")
