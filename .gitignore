@@ -1,0 +1,15 @@
+# Grafo do Graphify: grande, muda a cada commit, conflito de merge garantido.
+# Regenerado pelo hook post-commit. NUNCA versionar.
+graphify-out/
+*.graphml
+
+# Estado local de sessao dos hooks do core
+.claude/core-state/
+.claude/baseline/
+
+node_modules/
+.DS_Store
+Thumbs.db
+
+# nada de configuracao local de teste
+.claude/settings.local.json

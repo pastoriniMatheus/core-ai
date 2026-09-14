@@ -1,0 +1,43 @@
+{
+  "//": "Configuracao do nucleo neste projeto. Tudo e opcional: o que faltar herda o default.",
+
+  "verify": {
+    "//": "Verificacao do arquivo editado. Timeout curto de proposito: hook lento anula o ganho de tempo.",
+    "enabled": true,
+    "timeoutMs": 12000,
+    "//byExtension": "Descomente para sobrescrever a autodeteccao. {file} vira o caminho do arquivo.",
+    "byExtension": null
+  },
+
+  "depGuard": {
+    "//": "Para o agente uma vez antes de adicionar dependencia. Nao proibe: forca subir a escada.",
+    "enabled": true
+  },
+
+  "stopVerify": {
+    "//": "Bloqueia o encerramento se houve edicao de codigo sem teste rodado depois.",
+    "enabled": true,
+    "//testPatterns": "Acrescente o comando de teste deste projeto se ele nao estiver na lista padrao.",
+    "testPatterns": null,
+    "//projectCheck": "Build/typecheck de PROJETO INTEIRO, rodado uma vez antes de encerrar. E aqui que Rust, Java, C# e o typecheck de TS sao cobertos - o verificador por arquivo nao alcanca essas linguagens. Ex: [\"cargo check\", \"npx tsc --noEmit\"]",
+    "projectCheck": []
+  },
+
+  "publish": {
+    "//": "O portao de publicacao. Permissao do usuario por PR e por card, toda vez.",
+    "enabled": true,
+    "//trackerPatterns": "PREENCHA com a URL da API do seu tracker (regex). Vazio = o portao so vale para PRs.",
+    "trackerPatterns": [],
+    "reviewState": "In Review",
+    "doneState": "Done",
+    "//tokenEnv": "NOME da variavel de ambiente com o token do tracker. NUNCA o valor - este arquivo e versionado. O valor vai em .claude/settings.local.json, que nao entra no git.",
+    "//forbiddenStates": "Estados que o agente nunca move, nem autorizado. Quem revisa move a mao.",
+    "baseBranch": "develop"
+  },
+
+  "graph": {
+    "//": "Avisa antes de consultar um grafo desatualizado.",
+    "enabled": true,
+    "staleAfterCommits": 25
+  }
+}

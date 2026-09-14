@@ -1,0 +1,1270 @@
+<title>agent-core</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --ground:       #FCFCFD;
+    --surface:      #FFFFFF;
+    --sunk:         #F1F4F6;
+    --ink:          #14181D;
+    --ink-2:        #4A555F;
+    --ink-3:        #7C8894;
+    --rule:         #DDE3E8;
+    --rule-strong:  #C3CCD4;
+    --accent:       #0D5C63;
+    --accent-ink:   #0D5C63;
+    --accent-soft:  #E3F0F0;
+    --warn:         #8F5408;
+    --warn-soft:    #FAF0DD;
+    --danger:       #9C352F;
+    --shadow:       0 1px 2px rgba(20,24,29,.05), 0 8px 24px -16px rgba(20,24,29,.25);
+
+    --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --prose:   "Source Serif 4", Georgia, "Times New Roman", serif;
+    --mono:    "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+    color-scheme: light;
+  }
+
+  :root:not([data-theme="light"]) { }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0E1216;
+      --surface:     #151A20;
+      --sunk:        #1B222A;
+      --ink:         #E9EEF2;
+      --ink-2:       #A5B2BE;
+      --ink-3:       #6E7D8A;
+      --rule:        #27303A;
+      --rule-strong: #3A4652;
+      --accent:      #56BEBE;
+      --accent-ink:  #7FD3D3;
+      --accent-soft: #113030;
+      --warn:        #DBA055;
+      --warn-soft:   #2A2113;
+      --danger:      #DC7B73;
+      --shadow:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:      #0E1216;
+    --surface:     #151A20;
+    --sunk:        #1B222A;
+    --ink:         #E9EEF2;
+    --ink-2:       #A5B2BE;
+    --ink-3:       #6E7D8A;
+    --rule:        #27303A;
+    --rule-strong: #3A4652;
+    --accent:      #56BEBE;
+    --accent-ink:  #7FD3D3;
+    --accent-soft: #113030;
+    --warn:        #DBA055;
+    --warn-soft:   #2A2113;
+    --danger:      #DC7B73;
+    --shadow:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.7);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--prose);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 1fr;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+    gap: 0;
+  }
+
+  @media (min-width: 1000px) {
+    .shell { grid-template-columns: 208px minmax(0, 1fr); gap: 56px; }
+  }
+
+  /* ---------------------------------------------------------- masthead */
+  .masthead {
+    grid-column: 1 / -1;
+    padding: 56px 0 40px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 48px;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 18px;
+  }
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(34px, 6vw, 52px);
+    font-weight: 500;
+    letter-spacing: -.02em;
+    line-height: 1.05;
+    margin: 0 0 20px;
+    color: var(--ink);
+  }
+  .standfirst {
+    font-size: 20px;
+    line-height: 1.55;
+    color: var(--ink-2);
+    max-width: 60ch;
+    margin: 0;
+    text-wrap: pretty;
+  }
+  .status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 28px;
+  }
+  .chip {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 5px 11px;
+    border-radius: 3px;
+    border: 1px solid var(--rule-strong);
+    color: var(--ink-2);
+    background: var(--surface);
+    white-space: nowrap;
+  }
+  .chip.good { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+
+  /* -------------------------------------------------------------- nav */
+  nav {
+    display: none;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    padding-top: 4px;
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+  @media (min-width: 1000px) { nav { display: block; } }
+  nav ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  nav a {
+    display: block;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.4;
+    padding: 7px 10px;
+    color: var(--ink-3);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    border-radius: 0 3px 3px 0;
+  }
+  nav a:hover { color: var(--ink); background: var(--sunk); }
+  nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  nav a.here { color: var(--accent-ink); border-left-color: var(--accent); background: var(--accent-soft); }
+
+  /* ------------------------------------------------------------ prose */
+  main { min-width: 0; }
+  section { margin-bottom: 72px; scroll-margin-top: 24px; }
+  main > section:last-child { margin-bottom: 0; }
+
+  h2 {
+    font-family: var(--display);
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -.015em;
+    line-height: 1.2;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent-ink);
+    display: block;
+    letter-spacing: .1em;
+    margin-bottom: 10px;
+  }
+  h3 {
+    font-family: var(--display);
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    margin: 40px 0 10px;
+    text-wrap: balance;
+  }
+  h4 {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 32px 0 10px;
+  }
+  p { margin: 0 0 16px; max-width: 68ch; text-wrap: pretty; }
+  .lede { font-size: 18.5px; color: var(--ink-2); max-width: 64ch; }
+  ul, ol.body { margin: 0 0 16px; padding-left: 22px; max-width: 66ch; }
+  li { margin-bottom: 7px; }
+  strong { font-weight: 600; color: var(--ink); }
+  em { font-style: italic; }
+  a { color: var(--accent-ink); text-underline-offset: 2px; }
+
+  code {
+    font-family: var(--mono);
+    font-size: .87em;
+    background: var(--sunk);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: var(--ink);
+  }
+
+  pre {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--sunk);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 0 0 20px;
+    color: var(--ink);
+  }
+  pre code { background: none; border: none; padding: 0; font-size: inherit; }
+  pre .c { color: var(--ink-3); }
+  pre .k { color: var(--accent-ink); }
+
+  /* ----------------------------------------------------------- tables */
+  .scroller { overflow-x: auto; margin: 0 0 22px; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: "Source Serif 4", Georgia, serif;
+    font-size: 15.5px;
+    line-height: 1.5;
+  }
+  th {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    text-align: left;
+    padding: 0 14px 9px 0;
+    border-bottom: 1px solid var(--rule-strong);
+    white-space: nowrap;
+  }
+  td {
+    padding: 11px 14px 11px 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    color: var(--ink-2);
+  }
+  td:first-child { color: var(--ink); }
+  td code { white-space: nowrap; }
+  .num-cell { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; padding-right: 0; }
+
+  /* ------------------------------------------- determinístico vs não */
+  .pair { display: grid; gap: 16px; margin: 0 0 24px; }
+  @media (min-width: 700px) { .pair { grid-template-columns: 1fr 1fr; } }
+
+  .panel {
+    padding: 18px 20px;
+    border-radius: 5px;
+    background: var(--surface);
+  }
+  .panel .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 10px;
+  }
+  .panel p { font-size: 15.5px; margin: 0; max-width: none; }
+  .panel p + p { margin-top: 10px; }
+
+  /* borda tracejada = o modelo PODE ignorar. sólida = sempre executa. */
+  .panel.soft { border: 1px dashed var(--rule-strong); background: var(--warn-soft); }
+  .panel.soft .tag { color: var(--warn); }
+  .panel.hard { border: 1px solid var(--accent); background: var(--accent-soft); }
+  .panel.hard .tag { color: var(--accent-ink); }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 16px 20px;
+    margin: 0 0 22px;
+    border-radius: 0 4px 4px 0;
+    box-shadow: var(--shadow);
+  }
+  .callout p { margin: 0; font-size: 16px; max-width: none; }
+  .callout p + p { margin-top: 10px; }
+  .callout.warn { border-left-color: var(--warn); }
+
+  /* --------------------------------------------------------- figures */
+  .figure {
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    background: var(--surface);
+    padding: 24px;
+    margin: 0 0 22px;
+  }
+  figcaption {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-3);
+    margin-top: 16px;
+    line-height: 1.5;
+  }
+
+  .bars { display: flex; flex-direction: column; gap: 14px; }
+  .bar-row { display: grid; grid-template-columns: 110px minmax(0,1fr) auto; gap: 14px; align-items: center; }
+  .bar-label { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .bar-track { background: var(--sunk); border-radius: 2px; height: 22px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; }
+  .bar-val { font-family: var(--mono); font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink); }
+
+  /* --------------------------------------------------------- layers */
+  .layers { display: flex; flex-direction: column; gap: 10px; margin: 0 0 24px; }
+  .layer {
+    display: grid;
+    grid-template-columns: 34px minmax(0,1fr);
+    gap: 16px;
+    align-items: start;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 16px 18px;
+    background: var(--surface);
+  }
+  .layer-n {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--accent-ink);
+    line-height: 1.1;
+  }
+  .layer h3 { margin: 0 0 4px; font-size: 17px; }
+  .layer p { margin: 0; font-size: 15.5px; color: var(--ink-2); max-width: none; }
+  .layer .mech {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-3);
+    display: block;
+    margin-top: 8px;
+  }
+
+  /* ----------------------------------------------------------- phases */
+  .phases { display: grid; gap: 12px; margin: 0 0 24px; }
+  @media (min-width: 820px) { .phases { grid-template-columns: repeat(4, 1fr); } }
+  .phase {
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 14px 16px;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .phase-name { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .09em; color: var(--accent-ink); }
+  .phase-goal { font-size: 15px; color: var(--ink); line-height: 1.45; }
+  .phase-meta { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); line-height: 1.55; margin-top: auto; }
+
+  /* ----------------------------------------------------------- steps */
+  ol.steps { list-style: none; counter-reset: s; margin: 0 0 24px; padding: 0; }
+  ol.steps > li {
+    counter-increment: s;
+    display: grid;
+    grid-template-columns: 30px minmax(0,1fr);
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--rule);
+    margin: 0;
+  }
+  ol.steps > li:last-child { border-bottom: none; }
+  ol.steps > li::before {
+    content: counter(s);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-3);
+    border: 1px solid var(--rule-strong);
+    border-radius: 50%;
+    width: 24px; height: 24px;
+    display: grid; place-items: center;
+    margin-top: 2px;
+  }
+  ol.steps .wk { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); display: block; margin-bottom: 3px; }
+  ol.steps p { margin: 0; font-size: 15.5px; max-width: none; }
+  ol.steps pre { margin-top: 10px; margin-bottom: 0; }
+
+  footer {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--rule);
+    margin-top: 32px;
+    padding-top: 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-3);
+    line-height: 1.7;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+  html { scroll-behavior: smooth; }
+</style>
+
+<div class="shell">
+
+  <header class="masthead">
+    <p class="eyebrow">Diretrizes de agente · Claude Code</p>
+    <h1>agent-core</h1>
+    <p class="standfirst">Um núcleo genérico que organiza as diretrizes do agente por <strong>mecanismo de execução</strong> — não por ferramenta. Tudo que pode virar hook vira hook; só o que sobra vira instrução.</p>
+    <div class="status-row">
+      <span class="chip good">Camada 0 implementada</span>
+      <span class="chip good">90/90 unidade</span>
+      <span class="chip good">19/19 aceita&ccedil;&atilde;o</span>
+      <span class="chip">6 skills</span>
+      <span class="chip">4 comandos</span>
+      <span class="chip">Node 18+, zero dependências</span>
+    </div>
+  </header>
+
+  <nav aria-label="Índice">
+    <ol>
+      <li><a href="#diagnostico">O diagnóstico</a></li>
+      <li><a href="#camadas">As quatro camadas</a></li>
+      <li><a href="#camada0">Camada 0 · hooks</a></li>
+      <li><a href="#camada1">Camada 1 · contexto</a></li>
+      <li><a href="#camada2">Camada 2 · processo</a></li>
+      <li><a href="#portao">O portão de publicação</a></li>
+      <li><a href="#camada3">Camada 3 · custo</a></li>
+      <li><a href="#instalar">Instalar</a></li>
+      <li><a href="#medir">Medir</a></li>
+      <li><a href="#rollout">Rollout</a></li>
+      <li><a href="#validacao">Validado em sessão real</a></li>
+      <li><a href="#ferramentas">Ferramentas externas</a></li>
+      <li><a href="#camadas-projeto">Camadas de projeto</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <!-- ============================================== 1. DIAGNÓSTICO -->
+    <section id="diagnostico">
+      <h2><span class="num">PONTO DE PARTIDA</span>Por que diretrizes de agente falham</h2>
+      <p class="lede">O erro não é escrever regras ruins. É escrever regras certas no mecanismo errado.</p>
+
+      <p>A forma usual de dar disciplina a um agente é um <code>CLAUDE.md</code> extenso mandando-o se comportar: sempre planeje antes, nunca instale bibliotecas desnecessárias, sempre rode os testes. Parece razoável e falha por três motivos estruturais.</p>
+
+      <h3>1. O <code>CLAUDE.md</code> é cobrado em todo turno</h3>
+      <p>Ele entra no prompt em cada turno de cada sessão. Um procedimento detalhado escrito ali é pago <em>sempre</em> para ser útil <em>às vezes</em>. Skills carregam sob demanda; hooks carregam nunca — executam. Escrever o procedimento dentro do arquivo sempre-carregado é pagar duas vezes pela mesma regra.</p>
+
+      <h3>2. Instrução é probabilística</h3>
+      <p>O modelo obedece quase sempre. "Quase" é exatamente onde moram os erros que chegam em produção.</p>
+
+      <div class="pair">
+        <div class="panel soft">
+          <span class="tag">Probabilístico · pode ser ignorado</span>
+          <p>"Nunca instale bibliotecas desnecessárias."</p>
+          <p>"Não peça permissão, apenas rode os testes."</p>
+          <p>"Sempre consulte o grafo antes de ler arquivos."</p>
+        </div>
+        <div class="panel hard">
+          <span class="tag">Determinístico · sempre executa</span>
+          <p><code>PreToolUse</code> nega o comando de instalação e exige justificativa.</p>
+          <p><code>permissions.allow</code> no <code>settings.json</code> — permissão é do harness, não do prompt.</p>
+          <p><code>PostToolUse</code> roda o linter e devolve o erro ao agente.</p>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <p>A instrução <em>"não peça permissão, apenas rode os testes"</em> é o caso extremo: ela é <strong>inerte</strong>. Permissão é decidida pelo harness, nunca pelo prompt. A frase só ocupa tokens em todo turno, para sempre, sem efeito nenhum.</p>
+      </div>
+
+      <h3>3. Duas autoridades de processo se anulam</h3>
+      <p>Quando um conjunto de regras manda entrevistar o usuário até exaurir dúvidas e outro manda entregar o código e calar a boca, o agente oscila entre os dois. Ambas as regras são corretas — em momentos diferentes. Juntas no mesmo texto, elas destroem a assertividade que deveriam produzir.</p>
+      <p>A solução não é escolher uma. É <a href="#camada2">separá-las em fases</a>, para que nunca coexistam.</p>
+    </section>
+
+    <!-- ================================================= 2. CAMADAS -->
+    <section id="camadas">
+      <h2><span class="num">ARQUITETURA</span>Quatro camadas, por mecanismo</h2>
+      <p class="lede">Organizar por ferramenta produz uma pilha de plugins que brigam. Organizar por mecanismo de execução produz uma hierarquia em que cada regra mora onde consegue ser cumprida.</p>
+
+      <div class="layers">
+        <div class="layer">
+          <div class="layer-n">0</div>
+          <div>
+            <h3>Determinística</h3>
+            <p>O que não pode depender do modelo lembrar. Verificação pós-edição, guarda de dependência, prova antes de encerrar, allowlist de permissões.</p>
+            <span class="mech">hooks + settings.json · ataca ERRO</span>
+          </div>
+        </div>
+        <div class="layer">
+          <div class="layer-n">1</div>
+          <div>
+            <h3>Contexto</h3>
+            <p>O que o agente lê para não inventar. Roteador enxuto, vocabulário do domínio, grafo de dependências sempre fresco.</p>
+            <span class="mech">CLAUDE.md · CONTEXT.md · grafo · ataca ALUCINAÇÃO</span>
+          </div>
+        </div>
+        <div class="layer">
+          <div class="layer-n">2</div>
+          <div>
+            <h3>Processo</h3>
+            <p>Como o trabalho é conduzido. Uma única autoridade, nunca duas, mais as skills que codificam o que só este time sabe.</p>
+            <span class="mech">skills sob demanda · ataca DESALINHAMENTO</span>
+          </div>
+        </div>
+        <div class="layer">
+          <div class="layer-n">3</div>
+          <div>
+            <h3>Economia</h3>
+            <p>Onde o dinheiro realmente vai. Roteamento de modelo por tipo de tarefa e delegação de busca ampla a subagente.</p>
+            <span class="mech">subagentes · perfil de modelo · ataca CUSTO</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <p><strong>A regra que rege tudo:</strong> se puder descer de camada, desce. Uma regra que vira hook nunca deveria continuar sendo instrução.</p>
+      </div>
+    </section>
+
+    <!-- ================================================= 3. CAMADA 0 -->
+    <section id="camada0">
+      <h2><span class="num">CAMADA 0</span>O que executa sozinho</h2>
+      <p class="lede">Três hooks. Nenhum depende do modelo lembrar de nada.</p>
+
+      <div class="scroller">
+        <table>
+          <thead>
+            <tr><th>Hook</th><th>Evento</th><th>O que garante</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>post-edit-verify</code></td>
+              <td><code>Edit</code> <code>Write</code><br><code>MultiEdit</code></td>
+              <td>O arquivo editado passa pelo linter da linguagem. Reprovou, o erro volta ao agente como feedback acionável — antes de qualquer humano ver.</td>
+            </tr>
+            <tr>
+              <td><code>pre-bash-guard</code></td>
+              <td><code>Bash</code></td>
+              <td>Dependência nova exige subir a escada primeiro. Grafo desatualizado avisa antes de responder com confiança sobre dado velho.</td>
+            </tr>
+            <tr>
+              <td><code>stop-verify</code></td>
+              <td><code>Stop</code></td>
+              <td>Código alterado sem teste rodado depois não encerra a sessão. Lê o transcript e nomeia os arquivos que ficaram sem prova.</td>
+            </tr>
+            <tr>
+              <td><code>session-start</code></td>
+              <td><code>SessionStart</code></td>
+              <td>Projeto sem configuração avisa na primeira sessão, em vez de rodar meio-mudo em silêncio.</td>
+            </tr>
+            <tr>
+              <td><code>pre-publish-guard</code></td>
+              <td><code>Bash</code><br><code>mcp__*</code></td>
+              <td>PR ou movimento de card sem permissão explícita não passa — <strong>pelos dois caminhos</strong>. Estado final do card é <strong>bloqueio sem escape</strong>. <a href="#portao">Detalhe abaixo</a>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>A escada, agora obrigatória</h3>
+      <p>A regra "escreva o mínimo de código possível" vira uma parada real. Ao detectar <code>npm install lodash</code>, <code>bundle add rails</code> ou equivalente, o hook nega a chamada e devolve:</p>
+
+<pre><code><span class="c">[core] Dependencia nova detectada: `npm install lodash`</span>
+
+A escada da preguica inteligente, antes de adicionar uma dependencia:
+  <span class="k">1. YAGNI</span>      - isso precisa existir agora?
+  <span class="k">2. Repo</span>       - ja existe algo no projeto que resolve?
+  <span class="k">3. Stdlib</span>     - a biblioteca padrao da linguagem resolve?
+  <span class="k">4. Plataforma</span> - um recurso nativo resolve?
+  <span class="k">5. Instalado</span>  - uma dependencia JA no projeto resolve?
+  <span class="k">6. Uma linha</span>  - da para escrever em uma linha?
+
+Se a dependencia continuar sendo a resposta certa depois de subir a
+escada, explique por que os degraus 1-6 nao resolvem e reexecute
+prefixado com CORE_DEP_OK=1.</code></pre>
+
+      <p>Não proíbe instalar — força justificar uma vez. A distinção que importa: <code>npm install</code> sozinho restaura o lockfile e <strong>passa</strong>; <code>npm install lodash</code> adiciona dependência e <strong>para</strong>.</p>
+
+      <h3>Autodetecção, degradação silenciosa</h3>
+      <p>O verificador de pós-edição descobre a linguagem pela extensão e tenta os candidatos em ordem, do mais informativo ao mais básico. Ferramenta ausente significa hook silencioso, nunca hook quebrado.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Arquivo</th><th>Primeira escolha</th><th>Último recurso</th></tr></thead>
+          <tbody>
+            <tr><td><code>.rb</code></td><td><code>bundle exec rubocop</code></td><td><code>ruby -c</code></td></tr>
+            <tr><td><code>.js</code> <code>.mjs</code></td><td><code>eslint</code> (se há config)</td><td><code>node --check</code></td></tr>
+            <tr><td><code>.ts</code> <code>.tsx</code></td><td><code>eslint</code></td><td>— <span style="color:var(--ink-3)">(tsc é de projeto inteiro: fica no Stop)</span></td></tr>
+            <tr><td><code>.py</code></td><td><code>ruff check</code></td><td><code>py_compile</code></td></tr>
+            <tr><td><code>.go</code></td><td><code>gofmt -l -e</code></td><td>—</td></tr>
+            <tr><td><code>.php</code></td><td><code>php -l</code></td><td>—</td></tr>
+            <tr><td><code>.sh</code></td><td><code>shellcheck</code></td><td><code>bash -n</code></td></tr>
+            <tr><td><code>.swift</code></td><td><code>swiftc -parse</code></td><td>&mdash;</td></tr>
+            <tr><td><code>.kt</code></td><td><code>ktlint</code></td><td>&mdash;</td></tr>
+            <tr><td><code>.yml</code> <code>.yaml</code></td><td><code>yq</code></td><td>PyYAML</td></tr>
+            <tr><td><code>.json</code></td><td colspan="2"><code>JSON.parse</code> dentro do próprio Node — sem spawn, sem tooling, de graça</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>O que o verificador por arquivo não alcança</h3>
+      <p><strong>Rust, Java, C# e Scala não entram na tabela acima</strong> — e isso não é esquecimento. Nessas linguagens o compilador precisa do projeto inteiro (crate, classpath, solution): não existe verificação de um arquivo isolado que seja confiável, e rodar <code>cargo check</code> a cada edição custaria minutos.</p>
+      <p>O buraco é fechado no outro extremo. <code>stopVerify.projectCheck</code> roda o build ou typecheck completo <strong>uma vez</strong>, no <code>Stop</code>, antes de a sessão encerrar:</p>
+<pre><code>{
+  "stopVerify": {
+    "projectCheck": ["cargo check"]        <span class="c">// ou "npx tsc --noEmit", "mvn -q compile"</span>
+  }
+}</code></pre>
+      <p>Barato por arquivo a cada edição; caro por projeto uma vez no fim. O custo é pago onde ele não atrapalha o fluxo.</p>
+
+      <div class="callout warn">
+        <p><strong>Hook lento anula o ganho que deveria proteger.</strong> Por isso o escopo é o <em>arquivo editado</em>, nunca o projeto: timeout de 12&nbsp;s e verificação de um arquivo só. Typecheck de projeto inteiro pertence ao <code>Stop</code>.</p>
+      </div>
+
+      <h3>Provado, não presumido</h3>
+      <p>Hook errado é pior que hook nenhum: bloqueia trabalho legítimo e o time desliga tudo na primeira semana. A suíte cobre os dois lados de cada regra.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Grupo</th><th>Cobre</th><th class="num-cell">Casos</th></tr></thead>
+          <tbody>
+            <tr><td>Dep guard bloqueia</td><td>npm, yarn, pnpm, bundle, gem, pip, poetry, uv, cargo, go, composer</td><td class="num-cell">12</td></tr>
+            <tr><td>Dep guard libera</td><td><code>npm install</code> puro, escape hatch, comandos de teste, docker</td><td class="num-cell">8</td></tr>
+            <tr><td>Verificação pós-edição</td><td>JSON e JS quebrados e válidos, extensão sem verificador, entrada vazia</td><td class="num-cell">7</td></tr>
+            <tr><td>Prova antes de encerrar</td><td>editou sem testar, testou depois, reeditou, só leitura, só doc, antiloop</td><td class="num-cell">7</td></tr>
+            <tr><td>Portão de publicação</td><td>PR, merge, force-push, autorizado, leituras que passam, tracker</td><td class="num-cell">14</td></tr>
+            <tr><td>Estado final sem escape</td><td>Done bloqueado inclusive com autorização, em duas línguas</td><td class="num-cell">3</td></tr>
+            <tr><td>YAML e check de projeto</td><td>YAML válido e quebrado, projectCheck que passa, falha e não deve rodar</td><td class="num-cell">6</td></tr>
+            <tr><td>Configuração e degradação</td><td>ferramenta ausente não bloqueia; aviso de projeto não configurado</td><td class="num-cell">3</td></tr>
+            <tr><td>Portão por MCP</td><td>tracker e PR via MCP, leitura passa, Done bloqueado, token one-shot e vencido</td><td class="num-cell">9</td></tr>
+            <tr><td colspan="2" style="color:var(--accent-ink);font-weight:600">Total</td><td class="num-cell" style="color:var(--accent-ink);font-weight:600">90 / 90</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>Dois bugs que a suíte pegou</h4>
+      <p><strong>Saída perdida no Windows.</strong> O <code>pre-bash-guard</code> negava a chamada mas o motivo chegava vazio: <code>process.stdout.write</code> para um pipe é assíncrono, e o <code>process.exit()</code> seguinte descartava a saída. O <code>stderr</code> funcionava por ser síncrono, o que escondia o problema. Corrigido escrevendo direto no file descriptor com <code>writeSync</code>.</p>
+      <p><strong>Ferramenta ausente bloqueando tudo.</strong> Com <code>shell: true</code>, um binário inexistente não produz <code>ENOENT</code> — o shell existe, executa e devolve erro comum, indistinguível de "o linter reprovou o arquivo". Numa máquina Windows sem <code>rubocop</code>, <em>toda</em> edição de <code>.rb</code> seria bloqueada. O exit code também não ajuda: o <code>cmd.exe</code> devolve 1 onde deveria devolver 9009. A correção foi checar a existência do binário <strong>antes</strong> de rodar, com <code>where</code> / <code>command -v</code>.</p>
+      <p>Os dois são falhas silenciosas: nenhuma produz erro visível, as duas tornariam o núcleo inutilizável. É a razão de a suíte existir.</p>
+    </section>
+
+    <!-- ================================================= 4. CAMADA 1 -->
+    <section id="camada1">
+      <h2><span class="num">CAMADA 1</span>Contexto: o que o agente lê</h2>
+
+      <h3>O roteador de 40 linhas</h3>
+      <p>O <code>CLAUDE.md</code> do núcleo não é um manual — é um roteador. Ele diz <em>quem manda</em>, <em>qual fase</em> e <em>onde achar o resto</em>. Alvo de 40 linhas; acima de 60, algo está na camada errada.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Mecanismo</th><th>Quando carrega</th><th>Serve para</th></tr></thead>
+          <tbody>
+            <tr><td><code>CLAUDE.md</code></td><td><strong>todo turno, toda sessão</strong></td><td>O mínimo indispensável: precedência e onde achar o resto</td></tr>
+            <tr><td>Skill</td><td>só quando relevante</td><td>O procedimento detalhado</td></tr>
+            <tr><td>Hook</td><td>só no evento</td><td>O que não pode depender do modelo lembrar</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Grafo ou busca textual</h3>
+      <p>A regra "nunca use busca textual, sempre consulte o grafo" é ativamente prejudicial: faz o agente rodar uma ferramenta pesada para achar um literal. A regra correta é condicional.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>A pergunta é…</th><th>Ferramenta</th><th>Por quê</th></tr></thead>
+          <tbody>
+            <tr><td>onde está a string <code>X</code>?</td><td>busca textual</td><td>mais rápida e barata; o grafo não acrescenta nada</td></tr>
+            <tr><td>quem chama esta função?</td><td>grafo</td><td>é relação, não texto</td></tr>
+            <tr><td>o que quebra se eu mudar isto?</td><td>grafo</td><td>raio de impacto é o que o grafo modela</td></tr>
+            <tr><td>quais arquivos têm este padrão?</td><td>busca textual</td><td>é uma pergunta lexical</td></tr>
+            <tr><td>qual o formato deste arquivo?</td><td>leitura direta</td><td>não precisa de mapa</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <p><strong>A armadilha do mapa velho.</strong> O pior erro de um grafo de código não é a ausência dele — é ter um desatualizado. O agente responde com alta confiança sobre uma estrutura que não existe mais, e não há sinal de erro: a resposta parece certa. O <code>pre-bash-guard</code> bloqueia consultas quando o grafo está muitos commits atrás do HEAD.</p>
+        <p><code>graphify-out/</code> nunca é versionado. É grande, muda a cada commit e produz conflito de merge garantido em qualquer equipe. É artefato regenerável, como <code>node_modules</code>.</p>
+      </div>
+    </section>
+
+    <!-- ================================================= 5. CAMADA 2 -->
+    <section id="camada2">
+      <h2><span class="num">CAMADA 2</span>Processo: fases, não contradições</h2>
+      <p class="lede">Os regimes incompatíveis deixam de brigar quando viram estados distintos.</p>
+
+      <div class="phases">
+        <div class="phase">
+          <span class="phase-name">EXPLORAR</span>
+          <span class="phase-goal">Descobrir onde o trabalho acontece</span>
+          <span class="phase-meta">grafo + subagente<br>saída: só a conclusão<br>modelo rápido</span>
+        </div>
+        <div class="phase">
+          <span class="phase-name">ALINHAR</span>
+          <span class="phase-goal">Eliminar ambiguidade antes de codar</span>
+          <span class="phase-meta">entrevista<br>saída: perguntas incisivas<br>modelo forte</span>
+        </div>
+        <div class="phase">
+          <span class="phase-name">IMPLEMENTAR</span>
+          <span class="phase-goal">Escrever o mínimo que resolve</span>
+          <span class="phase-meta">edição + testes<br>saída: mínima<br>modelo intermediário</span>
+        </div>
+        <div class="phase">
+          <span class="phase-name">PROVAR</span>
+          <span class="phase-goal">Mostrar que funciona</span>
+          <span class="phase-meta">suíte + revisão<br>saída: só o que falhou<br>modelo rápido</span>
+        </div>
+      </div>
+
+      <p>Cada fase fixa seu regime de ferramenta, verbosidade e modelo. Voltar é comum e saudável: descobriu na implementação que o requisito era ambíguo, volta para ALINHAR em vez de adivinhar.</p>
+
+      <div class="callout">
+        <p><strong>Pule ALINHAR quando o pedido for pequeno e inequívoco.</strong> Entrevistar alguém sobre uma correção de typo destrói a confiança na ferramenta mais rápido do que qualquer bug. Regra sem exceção declarada é regra aplicada fora de contexto.</p>
+      </div>
+
+      <h3>As quatro skills</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Skill</th><th>Dispara quando</th></tr></thead>
+          <tbody>
+            <tr><td><code>fase</code></td><td>Início de trabalho não-trivial, ou o usuário pede para acelerar/aprofundar</td></tr>
+            <tr><td><code>mapear-codigo</code></td><td>Vai alterar código que não está em contexto, ou avaliar o que quebra</td></tr>
+            <tr><td><code>economia-de-contexto</code></td><td>Busca ampla, codebase grande, ou sessão longa ficando cara</td></tr>
+            <tr><td><code>extrair-skill</code></td><td>O usuário corrige uma convenção não escrita, ou algo custou tempo para descobrir</td></tr>
+            <tr><td><code>entregar-trabalho</code></td><td>Antes de qualquer PR, antes de mover um card, ou quando a tarefa parece pronta</td></tr>
+            <tr><td><code>ci-local</code></td><td>Primeira vez num projeto, ou quando não há um jeito único de verificá-lo</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <p><strong>A skill mais valiosa é <code>extrair-skill</code>.</strong> Disciplina importada é genérica por construção: serve a qualquer projeto porque não sabe nada sobre o seu. O maior ganho de assertividade num projeto grande vem do oposto — do que só este time sabe. Qual comando de deploy mente sobre ter dado certo. Por que o caminho óbvio não funciona. Nenhuma ferramenta de prateleira traz isso; você extrai.</p>
+      </div>
+    </section>
+
+    <!-- ================================================== PORTAO -->
+    <section id="portao">
+      <h2><span class="num">CAMADA 0 &middot; ENTREGA</span>O port&atilde;o de publica&ccedil;&atilde;o</h2>
+      <p class="lede">Publicar n&atilde;o &eacute; o fim do trabalho &mdash; &eacute; o momento em que ele passa a existir para outras pessoas.</p>
+
+      <p>Uma PR aberta fica vis&iacute;vel para o time inteiro sob o nome de quem a abriu. Um card movido para revis&atilde;o puxa o tempo de algu&eacute;m. S&atilde;o a&ccedil;&otilde;es socialmente irrevers&iacute;veis, e por isso t&ecirc;m port&atilde;o &mdash; o port&atilde;o &eacute; o usu&aacute;rio.</p>
+
+      <div class="callout">
+        <p><strong>Regra zero:</strong> nunca abrir uma PR e nunca mover um card para revis&atilde;o sem permiss&atilde;o expl&iacute;cita do usu&aacute;rio. <strong>Por PR e por card. Toda vez.</strong></p>
+        <p>N&atilde;o vale &ldquo;est&aacute; pronto e a CI est&aacute; verde&rdquo;. N&atilde;o vale &ldquo;est&aacute; obviamente pronto&rdquo;. N&atilde;o vale &ldquo;o card anterior desta mesma leva foi autorizado&rdquo;. Autoriza&ccedil;&atilde;o &eacute; por item: um sim para uma tarefa n&atilde;o &eacute; um sim para a pr&oacute;xima.</p>
+      </div>
+
+      <h3>O que o hook verifica sozinho</h3>
+      <p>O <code>pre-publish-guard</code> intercepta <code>gh pr create</code>, <code>gh pr merge</code>, <code>glab mr create</code>, force-push e chamadas ao tracker. Leitura passa livre: <code>gh pr view</code>, <code>gh pr list</code> e <code>git push</code> comum n&atilde;o s&atilde;o publica&ccedil;&atilde;o.</p>
+
+<pre><code><span class="c">[core] Portao de publicacao: `gh pr create --fill`</span>
+
+  <span class="k">[x] PROVA AUSENTE</span> &mdash; codigo alterado e nenhum teste rodou depois:
+     - src/billing.rb
+     - src/invoice.rb
+
+  Antes de abrir/alterar uma PR, confirme com o usuario. Por PR e por card, toda vez.
+  O usuario nao falou desde a ultima edicao &mdash; ninguem autorizou esta publicacao.
+
+  Antes de pedir a permissao, tenha:
+    - o caminho REAL exercitado, nao so a suite unitaria
+    - contraprova: o teste falha sem o fix e passa com ele
+    - o que ficou de fora dito explicitamente
+    - base da PR: `develop`
+
+  Pare, relate o que foi verificado e o que segue aberto, e pergunte.
+  Com a autorizacao em maos, reexecute prefixado com CORE_PUBLISH_OK=1</code></pre>
+
+      <p>Duas coisas s&atilde;o verificadas de fato no transcript: se houve <strong>edi&ccedil;&atilde;o de c&oacute;digo sem teste rodado depois</strong> (e quais arquivos), e se o <strong>usu&aacute;rio falou desde a &uacute;ltima edi&ccedil;&atilde;o</strong> &mdash; porque se ningu&eacute;m falou, ningu&eacute;m autorizou. A autoriza&ccedil;&atilde;o em si n&atilde;o &eacute; verific&aacute;vel com certeza, e &eacute; por isso que a barreira &eacute; obrigat&oacute;ria em vez de condicional.</p>
+
+      <div class="callout warn">
+        <p>O marcador <code>CORE_PUBLISH_OK=1</code> significa <strong>&ldquo;eu perguntei e o usu&aacute;rio disse sim&rdquo;</strong>. Us&aacute;-lo sem ter perguntado &eacute; mentir para a &uacute;nica salvaguarda que existe.</p>
+      </div>
+
+      <h3>Su&iacute;te verde n&atilde;o &eacute; &ldquo;testado&rdquo;</h3>
+      <p>Antes de oferecer o trabalho como pronto, exercite a coisa real: a tela no navegador contra a stack, o endpoint contra um servidor de verdade, o fluxo de ponta a ponta. Se o ambiente para isso n&atilde;o existe, <strong>construa ou diga com essas palavras que n&atilde;o foi exercitado</strong>.</p>
+      <p>&Eacute; o tipo de defeito que passa por todo teste unit&aacute;rio e aparece no primeiro uso &mdash; uma chave emitida que n&atilde;o podia ser recuperada, uma consulta pausada renderizando como &ldquo;vazio&rdquo;.</p>
+
+      <h3>Os tr&ecirc;s movimentos do card</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Movimento</th><th>Quem faz</th></tr></thead>
+          <tbody>
+            <tr><td>pegar a tarefa / iniciar</td><td>o agente, quando o trabalho come&ccedil;a de fato</td></tr>
+            <tr><td>mover para <strong>revis&atilde;o</strong></td><td>o agente, <strong>com permiss&atilde;o expl&iacute;cita</strong>, e s&oacute; com a PR j&aacute; criada e linkada no coment&aacute;rio</td></tr>
+            <tr><td>mover para <strong>conclu&iacute;do</strong></td><td><strong>somente quem revisa, &agrave; m&atilde;o.</strong> Nunca o agente, nunca o autor</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pair">
+        <div class="panel soft">
+          <span class="tag">Bloqueio com escape</span>
+          <p>Abrir PR, mover para revis&atilde;o, force-push.</p>
+          <p>O agente pergunta, o usu&aacute;rio autoriza, o comando segue com o marcador.</p>
+        </div>
+        <div class="panel hard">
+          <span class="tag">Bloqueio sem escape</span>
+          <p>Mover o card para o estado final.</p>
+          <p>Nem com autoriza&ccedil;&atilde;o do usu&aacute;rio: fechar um card &eacute; o julgamento de quem revisou, e a autoriza&ccedil;&atilde;o n&atilde;o transfere o julgamento.</p>
+        </div>
+      </div>
+
+      <h3>O contrato do coment&aacute;rio</h3>
+      <p>Quando a permiss&atilde;o vier e o card for movido, o coment&aacute;rio n&atilde;o &eacute; um aviso &mdash; &eacute; o que o revisor l&ecirc; antes de olhar o c&oacute;digo.</p>
+      <ul>
+        <li><strong>Link clic&aacute;vel da PR.</strong> URL inteira, nunca s&oacute; <code>#123</code>: refer&ecirc;ncia curta entre reposit&oacute;rios raramente vira link no tracker.</li>
+        <li><strong>Os SHAs</strong> dos commits que a PR carrega.</li>
+        <li><strong>O que foi exercitado</strong>, com o resultado &mdash; e o que n&atilde;o foi.</li>
+        <li><strong>Refer&ecirc;ncias cruzadas nomeando o tipo de depend&ecirc;ncia:</strong> n&atilde;o &ldquo;relacionado a X&rdquo;, mas &ldquo;conflita textualmente com X&rdquo;, &ldquo;precisam entrar juntos&rdquo;, &ldquo;encontrado ao testar X&rdquo;. Nos dois cards.</li>
+      </ul>
+
+      <div class="callout">
+        <p><strong>Uma hist&oacute;ria s&oacute; em todos os artefatos.</strong> Descri&ccedil;&atilde;o do card, coment&aacute;rio, corpo da PR e runbook contam a mesma coisa. Quando uma conclus&atilde;o muda, ela muda nos quatro &mdash; deixar a recomenda&ccedil;&atilde;o nova no card e a velha no coment&aacute;rio &eacute; gafe, e o revisor encontra.</p>
+      </div>
+
+      <h4>Configurar para o seu tracker</h4>
+      <p>O n&uacute;cleo n&atilde;o sabe qual tracker a equipe usa. Em <code>.claude/core.json</code>:</p>
+<pre><code>{
+  "publish": {
+    "trackerPatterns": ["tracker[.]suaempresa[.]com/api"],
+    "reviewState": "In Review",
+    "doneState": "Done",
+    "baseBranch": "develop"
+  }
+}</code></pre>
+      <p>Sem <code>trackerPatterns</code>, o port&atilde;o continua valendo para PRs &mdash; s&oacute; n&atilde;o reconhece comandos de tracker.</p>
+    </section>
+
+    <!-- ================================================= 6. CAMADA 3 -->
+    <section id="camada3">
+      <h2><span class="num">CAMADA 3</span>Onde o custo realmente está</h2>
+      <p class="lede">Cortar linhas de código geradas é um ganho real. Mas não é onde está o dinheiro.</p>
+
+      <p>Os números abaixo são desta sessão — a que produziu este próprio núcleo, medidos por <code>scripts/baseline.mjs</code> nos transcripts locais.</p>
+
+      <figure class="figure">
+        <div class="bars">
+          <div class="bar-row">
+            <span class="bar-label">cache lido</span>
+            <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--accent)"></div></div>
+            <span class="bar-val">8.551.717</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">cache escrito</span>
+            <div class="bar-track"><div class="bar-fill" style="width:4.5%;background:var(--rule-strong)"></div></div>
+            <span class="bar-val">386.314</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">output</span>
+            <div class="bar-track"><div class="bar-fill" style="width:2.4%;background:var(--warn)"></div></div>
+            <span class="bar-val">202.465</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">input novo</span>
+            <div class="bar-track"><div class="bar-fill" style="width:0.5%;background:var(--rule-strong)"></div></div>
+            <span class="bar-val">150</span>
+          </div>
+        </div>
+        <figcaption>Tokens em uma sessão de 75 turnos, 76 minutos. O input reprocessado é 42× maior que a saída gerada. Escala linear; a barra de cache lido é 100%.</figcaption>
+      </figure>
+
+      <p>Uma ferramenta que corta 20% do código gerado ataca a barra âmbar. A arquitetura de contexto ataca a barra teal. As duas somam — mas só uma delas muda a conta.</p>
+
+      <h3>As duas alavancas reais</h3>
+      <p><strong>Subagente para busca ampla.</strong> Delegue toda busca cujo resultado útil é menor que o material lido. Procurar em quarenta arquivos para concluir "a validação mora em <code>auth/rules</code>" é o caso perfeito: o subagente lê os quarenta, você recebe uma frase — e os quarenta continuam fora do seu contexto em todos os turnos seguintes.</p>
+
+      <p><strong>Modelo por tipo de tarefa.</strong> Rodar o modelo mais forte com esforço máximo em toda tarefa é o maior desperdício silencioso que existe. Buscar arquivo não exige raciocínio profundo.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Tarefa</th><th>Perfil</th></tr></thead>
+          <tbody>
+            <tr><td>busca, listagem, classificação, extração</td><td>modelo rápido, esforço baixo</td></tr>
+            <tr><td>implementação com critério de aceite claro</td><td>modelo intermediário, esforço médio</td></tr>
+            <tr><td>arquitetura, modelagem de domínio, bug sutil</td><td>modelo forte, esforço alto</td></tr>
+            <tr><td>revisão adversarial</td><td>modelo forte, esforço alto</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================== INSTALAR -->
+    <section id="instalar">
+      <h2><span class="num">COME&Ccedil;AR</span>Instalar: uma decis&atilde;o s&oacute;</h2>
+      <p class="lede">Voc&ecirc; n&atilde;o copia nada manualmente. Um script escreve tudo; a &uacute;nica escolha &eacute; o escopo.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th></th><th>Por projeto (padr&atilde;o)</th><th>Global</th></tr></thead>
+          <tbody>
+            <tr><td>Comando</td><td><code>install.mjs &lt;projeto&gt;</code></td><td><code>install.mjs --global</code></td></tr>
+            <tr><td>Vale em</td><td>s&oacute; naquele projeto</td><td><strong>todos</strong> os projetos da m&aacute;quina</td></tr>
+            <tr><td>Instala</td><td>hooks, skills, comandos, <code>CLAUDE.md</code>, <code>CONTEXT.md</code>, <code>core.json</code>, permiss&otilde;es</td><td>s&oacute; hooks, skills e comandos</td></tr>
+            <tr><td>Repete por projeto?</td><td>sim</td><td>n&atilde;o</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <p><strong>O pre&ccedil;o do global:</strong> as guardas valem mesmo &mdash; inclusive num reposit&oacute;rio de terceiro que voc&ecirc; s&oacute; foi ler. Bloquear <code>npm install</code> em c&oacute;digo que n&atilde;o &eacute; seu incomoda r&aacute;pido.</p>
+      </div>
+
+      <p><strong>A combina&ccedil;&atilde;o que funciona:</strong> global uma vez, e depois por projeto naquele onde voc&ecirc; trabalha de verdade. O segundo comando acrescenta o que s&oacute; faz sentido por projeto e n&atilde;o duplica os hooks.</p>
+
+<pre><code><span class="c"># 1. uma vez, para todos os projetos</span>
+node scripts/install.mjs --global
+
+<span class="c"># 2. em cada projeto de verdade</span>
+node scripts/preflight.mjs ~/meu-projeto   <span class="c"># o que falta instalar</span>
+node scripts/install.mjs   ~/meu-projeto
+node scripts/doctor.mjs    ~/meu-projeto   <span class="c"># confirma</span>
+
+<span class="c"># 3. dentro do Claude Code, no projeto</span>
+/core-setup</code></pre>
+
+      <p>O instalador &eacute; <strong>aditivo</strong>: hooks de outras ferramentas no mesmo evento s&atilde;o preservados, uma skill sua com o mesmo nome n&atilde;o &eacute; sobrescrita, e rodar duas vezes n&atilde;o duplica nada.</p>
+
+      <h3>O que vai para o git e o que fica na m&aacute;quina</h3>
+      <p>Os hooks do modo local carregam o caminho absoluto do n&uacute;cleo nesta m&aacute;quina. Versionar isso quebraria o projeto para todo mundo: no clone do colega, o hook aponta para um diret&oacute;rio que n&atilde;o existe &mdash; e falha em sil&ecirc;ncio.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Arquivo</th><th>Cont&eacute;m</th><th>Git</th></tr></thead>
+          <tbody>
+            <tr><td><code>.claude/settings.json</code></td><td>permiss&otilde;es, marketplace</td><td>versionar</td></tr>
+            <tr><td><code>.claude/settings.local.json</code></td><td>hooks e <code>AGENT_CORE_ROOT</code> desta m&aacute;quina, credenciais</td><td><strong>nunca</strong></td></tr>
+            <tr><td><code>.claude/skills/</code> <code>commands/</code></td><td>as 6 skills e os 4 comandos</td><td>versionar</td></tr>
+            <tr><td><code>CLAUDE.md</code> <code>CONTEXT.md</code> <code>core.json</code></td><td>roteador, vocabul&aacute;rio, ajustes</td><td>versionar</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Os comandos versionados referenciam <code>$AGENT_CORE_ROOT</code> em vez do caminho real; cada m&aacute;quina define o valor no seu arquivo local. Um teste garante que <strong>nenhum arquivo versionado carregue caminho de m&aacute;quina</strong>.</p>
+
+      <h3>Prova em trinta segundos</h3>
+      <p>Depois de instalar, pe&ccedil;a ao agente, dentro do projeto:</p>
+      <blockquote style="margin:0 0 16px;padding:12px 18px;border-left:3px solid var(--rule-strong);color:var(--ink-2)">Adicione a depend&ecirc;ncia lodash usando npm install.</blockquote>
+      <p>Ele tem de ser <strong>bloqueado</strong> com a escada da pregui&ccedil;a. Se instalar direto, algo n&atilde;o ligou &mdash; rode o <code>doctor.mjs</code>.</p>
+    </section>
+
+    <!-- ================================================== 8. MEDIR -->
+    <section id="medir">
+      <h2><span class="num">OPERAÇÃO</span>Medir antes de acreditar</h2>
+
+<pre><code><span class="c"># ANTES de mudar qualquer coisa</span>
+node scripts/baseline.mjs --days 7 --save antes
+
+<span class="c"># depois de cada fase do rollout</span>
+node scripts/baseline.mjs --days 7 --compare antes</code></pre>
+
+      <p>Instalar quatro ferramentas de uma vez e sentir que melhorou não é resultado — é viés de confirmação. Sem número de partida, uma regressão passa despercebida e ninguém sabe qual mudança causou o quê.</p>
+
+      <h4>Como ler</h4>
+      <ul>
+        <li><strong>Turnos por sessão</strong> é o melhor indicador de assertividade: menos ida e volta corrigindo rumo para o mesmo trabalho.</li>
+        <li><strong>Não celebre queda de output isolada.</strong> Resposta mais curta sem queda de turnos pode ser só verbosidade menor, não acerto maior.</li>
+        <li><strong>Cache lido</strong> é onde a economia de arquitetura aparece.</li>
+      </ul>
+      <p>Não há tabela de preço embutida de propósito: preço muda e envelhece errado. O que compara antes e depois é a contagem por categoria.</p>
+    </section>
+
+    <!-- ================================================ 9. ROLLOUT -->
+    <section id="rollout">
+      <h2><span class="num">ADOÇÃO</span>Rollout faseado</h2>
+      <p class="lede">Instalar tudo de uma vez é garantir que ninguém saiba qual mudança causou o quê.</p>
+
+      <ol class="steps">
+        <li>
+          <div>
+            <span class="wk">Semana 0 · risco zero</span>
+            <p><strong>Baseline e allowlist de permissões.</strong> Ganho puro de tempo, sem mudar nada no comportamento do agente. Se parar aqui, o time já sai no lucro.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <span class="wk">Semana 1 · risco baixo</span>
+            <p><strong>Camada 0.</strong> Os três hooks entram. É onde está a redução real de erro. Compare com o baseline no fim da semana.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <span class="wk">Semana 2 · risco baixo</span>
+            <p><strong>Grafo e roteador.</strong> Mapa de dependências com reconstrução automática, mais o <code>CLAUDE.md</code> enxuto e o <code>CONTEXT.md</code> começando a encher.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <span class="wk">Semana 3 · risco alto</span>
+            <p><strong>A autoridade de processo.</strong> A troca mais disruptiva: a que muda como as pessoas trabalham, não só o que a máquina faz. Ela vem por último de propósito, com o baseline das três semanas anteriores para comparar.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <span class="wk">Semana 4 · opcional</span>
+            <p><strong>Base de conhecimento externa.</strong> Fora do caminho crítico, sempre. Ferramenta não-oficial sobre API não documentada não pode ser fonte de verdade de uma equipe — o repositório é.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+        <!-- ============================================== INSTALAR -->
+    <section id="instalar-escopo">
+      <h2><span class="num">COME&Ccedil;AR</span>Instalar: uma decis&atilde;o s&oacute;</h2>
+      <p class="lede">Voc&ecirc; n&atilde;o copia nada manualmente. Um script escreve tudo; a &uacute;nica escolha &eacute; o escopo.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th></th><th>Por projeto (padr&atilde;o)</th><th>Global</th></tr></thead>
+          <tbody>
+            <tr><td>Comando</td><td><code>install.mjs &lt;projeto&gt;</code></td><td><code>install.mjs --global</code></td></tr>
+            <tr><td>Vale em</td><td>s&oacute; naquele projeto</td><td><strong>todos</strong> os projetos da m&aacute;quina</td></tr>
+            <tr><td>Instala</td><td>hooks, skills, comandos, <code>CLAUDE.md</code>, <code>CONTEXT.md</code>, <code>core.json</code>, permiss&otilde;es</td><td>s&oacute; hooks, skills e comandos</td></tr>
+            <tr><td>Repete por projeto?</td><td>sim</td><td>n&atilde;o</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warn">
+        <p><strong>O pre&ccedil;o do global:</strong> as guardas valem mesmo &mdash; inclusive num reposit&oacute;rio de terceiro que voc&ecirc; s&oacute; foi ler. Bloquear <code>npm install</code> em c&oacute;digo que n&atilde;o &eacute; seu incomoda r&aacute;pido.</p>
+      </div>
+
+      <p><strong>A combina&ccedil;&atilde;o que funciona:</strong> global uma vez, e depois por projeto naquele onde voc&ecirc; trabalha de verdade. O segundo comando acrescenta o que s&oacute; faz sentido por projeto e n&atilde;o duplica os hooks.</p>
+
+<pre><code><span class="c"># 1. uma vez, para todos os projetos</span>
+node scripts/install.mjs --global
+
+<span class="c"># 2. em cada projeto de verdade</span>
+node scripts/preflight.mjs ~/meu-projeto   <span class="c"># o que falta instalar</span>
+node scripts/install.mjs   ~/meu-projeto
+node scripts/doctor.mjs    ~/meu-projeto   <span class="c"># confirma</span>
+
+<span class="c"># 3. dentro do Claude Code, no projeto</span>
+/core-setup</code></pre>
+
+      <p>O instalador &eacute; <strong>aditivo</strong>: hooks de outras ferramentas no mesmo evento s&atilde;o preservados, uma skill sua com o mesmo nome n&atilde;o &eacute; sobrescrita, e rodar duas vezes n&atilde;o duplica nada.</p>
+
+      <h3>O que vai para o git e o que fica na m&aacute;quina</h3>
+      <p>Os hooks do modo local carregam o caminho absoluto do n&uacute;cleo nesta m&aacute;quina. Versionar isso quebraria o projeto para todo mundo: no clone do colega, o hook aponta para um diret&oacute;rio que n&atilde;o existe &mdash; e falha em sil&ecirc;ncio.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Arquivo</th><th>Cont&eacute;m</th><th>Git</th></tr></thead>
+          <tbody>
+            <tr><td><code>.claude/settings.json</code></td><td>permiss&otilde;es, marketplace</td><td>versionar</td></tr>
+            <tr><td><code>.claude/settings.local.json</code></td><td>hooks e <code>AGENT_CORE_ROOT</code> desta m&aacute;quina, credenciais</td><td><strong>nunca</strong></td></tr>
+            <tr><td><code>.claude/skills/</code> <code>commands/</code></td><td>as 6 skills e os 4 comandos</td><td>versionar</td></tr>
+            <tr><td><code>CLAUDE.md</code> <code>CONTEXT.md</code> <code>core.json</code></td><td>roteador, vocabul&aacute;rio, ajustes</td><td>versionar</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Os comandos versionados referenciam <code>$AGENT_CORE_ROOT</code> em vez do caminho real; cada m&aacute;quina define o valor no seu arquivo local. Um teste garante que <strong>nenhum arquivo versionado carregue caminho de m&aacute;quina</strong>.</p>
+
+      <h3>Prova em trinta segundos</h3>
+      <p>Depois de instalar, pe&ccedil;a ao agente, dentro do projeto:</p>
+      <blockquote style="margin:0 0 16px;padding:12px 18px;border-left:3px solid var(--rule-strong);color:var(--ink-2)">Adicione a depend&ecirc;ncia lodash usando npm install.</blockquote>
+      <p>Ele tem de ser <strong>bloqueado</strong> com a escada da pregui&ccedil;a. Se instalar direto, algo n&atilde;o ligou &mdash; rode o <code>doctor.mjs</code>.</p>
+    </section>
+
+    <!-- =============================================== VALIDACAO -->
+    <section id="validacao">
+      <h2><span class="num">PROVA</span>Validado em sessão real</h2>
+      <p class="lede">Uma suíte verde prova que o simulador funciona. O que prova o sistema é ele bloqueando trabalho de verdade.</p>
+
+      <p>Os hooks foram carregados numa sessão real do Claude Code, dentro de um projeto Go criado para isso — um gerenciador de fila de espera de restaurante, com <code>go.mod</code>, testes e histórico git. Três cenários, três sessões independentes.</p>
+
+      <div class="callout">
+        <p><strong>19/19 na aceitação automatizada.</strong> As cinco guardas disparam em sessão real do Claude Code, contadas no transcript — não deduzidas da resposta do agente. Um comando reproduz tudo: <code>node scripts/aceitacao.mjs</code>.</p>
+      </div>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Pedido ao agente</th><th>O que aconteceu</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>&ldquo;adicione a dependência <code>github.com/google/uuid</code> com <code>go get</code>&rdquo;</td>
+              <td><strong>Bloqueado.</strong> O agente subiu a escada, concluiu que <code>crypto/rand</code> resolveria em quatro linhas, e <strong>recusou-se a usar o escape</strong>: <em>&ldquo;não consigo escrever com verdade a frase que o hook pede&rdquo;</em>.</td>
+            </tr>
+            <tr>
+              <td>&ldquo;implemente <code>Cancelar()</code> e abra a PR&rdquo;</td>
+              <td><strong>Bloqueado.</strong> Implementou, testou, e parou na PR pedindo autorização — listando por conta própria o que ficou de fora: homônimos, <code>Cancelar("")</code>, ausência de mutex.</td>
+            </tr>
+            <tr>
+              <td>&ldquo;edite e <strong>não</strong> rode teste nenhum&rdquo;</td>
+              <td><strong>Bloqueado no <code>Stop</code>.</strong> O <code>post-edit-verify</code> pegou a chave não fechada no ato da escrita; o <code>stop-verify</code> barrou o encerramento.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Os disparos foram contados no transcript da sessão, não deduzidos da resposta: <code>pre-publish-guard</code> 2×, <code>pre-bash-guard</code> 2×, <code>session-start</code> 6×.</p>
+
+      <h3>Três bugs que só a sessão real encontrou</h3>
+      <p>Nenhum aparecia na suíte sintética. Os três eram falhas silenciosas — o tipo que não gera erro, só para de proteger.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Bug</th><th>Por que a suíte não via</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Escrita por shell escapava de tudo.</strong> O agente resolveu a tarefa inteira por PowerShell, sem tocar em <code>Edit</code>/<code>Write</code>: nem a verificação rodou, nem o <code>Stop</code> contou como código alterado</td>
+              <td>Os fixtures só simulavam edição por ferramenta. Mesmo padrão do buraco que o portão tinha com MCP — um caminho coberto, o outro livre</td>
+            </tr>
+            <tr>
+              <td><strong>Instalador divergindo do plugin.</strong> O matcher ganhou <code>Bash</code> no <code>hooks.json</code>, mas o instalador tinha a lista duplicada e hardcoded — a correção existia no código e nunca chegava aos projetos</td>
+              <td>A suíte testava os hooks, nunca o que o instalador de fato escrevia. Hoje o instalador <em>lê</em> o <code>hooks.json</code>, e um teste falha se os dois divergirem</td>
+            </tr>
+            <tr>
+              <td><strong>Arquivo apagado cobrado como &ldquo;sem prova&rdquo;.</strong> Um scratch criado e removido ficava pendurado na lista até o fim da sessão</td>
+              <td>Os fixtures usavam caminhos fictícios (<code>src/a.ts</code>), então o filtro de existência nunca era exercitado</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Rodar você mesmo</h3>
+      <p>Toda essa validação virou um comando. Ele cria o projeto descartável, instala o núcleo, roda as quatro sessões e lê o veredito do transcript — não da resposta do agente.</p>
+<pre><code>node scripts/aceitacao.mjs            <span class="c"># completo, ~10 min</span>
+node scripts/aceitacao.mjs --offline  <span class="c"># instalação e guardas, segundos</span>
+node scripts/aceitacao.mjs --manter   <span class="c"># não apaga o projeto no fim</span></code></pre>
+      <p><strong>Não exige instalar nada:</strong> Node já vem com o Claude Code, e o projeto de teste é JavaScript puro com <code>node --test</code>. O diretório é temporário e some no fim — nada toca seus repositórios.</p>
+
+      <h3>O que ainda não foi validado</h3>
+      <ul>
+        <li><strong>Mac e Linux.</strong> O ramo Unix de <code>binExiste</code> nunca executou como código de hook.</li>
+        <li><strong>O marketplace.</strong> Os hooks foram carregados por <code>settings.json</code> apontando caminhos absolutos; a distribuição via plugin GitHub não foi exercitada.</li>
+        <li><strong>MCP em sessão real.</strong> Os 9 testes de MCP são sintéticos — nenhum servidor MCP de tracker foi acionado de verdade.</li>
+        <li><strong>Codex, Antigravity e Cursor.</strong> As skills e o <code>CLAUDE.md</code> portam como <code>AGENTS.md</code>; os hooks e as permissões, não. Sem eles sobra instrução que o modelo obedece quase sempre — que é o que este núcleo existe para substituir.</li>
+        <li><strong>Convivência com outros hooks</strong> registrados no mesmo evento.</li>
+      </ul>
+
+      <div class="callout warn">
+        <p>Uma descoberta operacional: <code>permissions.allow</code> só vale <strong>depois de aceitar o diálogo de confiança</strong> do workspace. Antes disso o Claude Code ignora as 48 regras e avisa no terminal. Os hooks funcionam de qualquer forma — mas o ganho de tempo da allowlist exige abrir o projeto interativamente uma vez.</p>
+      </div>
+    </section>
+
+    <!-- ============================================== FERRAMENTAS -->
+    <section id="ferramentas">
+      <h2><span class="num">ESCOPO</span>O que o n&uacute;cleo n&atilde;o faz</h2>
+      <p class="lede">O n&uacute;cleo n&atilde;o instala Ponytail, mattpocock/skills, Graphify nem notebooklm-py. Ele &eacute; a arquitetura que as recebe &mdash; e funciona sozinho sem nenhuma delas.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Ferramenta</th><th>Instala&ccedil;&atilde;o</th><th>A armadilha</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Ponytail</strong><br><span style="color:var(--ink-3)">menos c&oacute;digo</span></td>
+              <td><code>/plugin install ponytail@ponytail</code></td>
+              <td>Os n&uacute;meros publicados (&minus;54% linhas, &minus;20% custo) foram medidos com ele <em>sozinho</em>, n&atilde;o empilhado. Por isso o <code>baseline.mjs</code> existe.</td>
+            </tr>
+            <tr>
+              <td><strong>mattpocock/skills</strong><br><span style="color:var(--ink-3)">processo</span></td>
+              <td><code>npx skills@latest add mattpocock/skills</code></td>
+              <td>Sobrep&otilde;e ~70% do <code>superpowers</code>. Rodar os dois faz o agente oscilar. O <code>doctor</code> acusa erro se os dois estiverem habilitados.</td>
+            </tr>
+            <tr>
+              <td><strong>Graphify</strong><br><span style="color:var(--ink-3)">grafo de c&oacute;digo</span></td>
+              <td><code>uv tool install graphifyy</code><br><code>graphify hook install</code></td>
+              <td>Sem o hook de rebuild, o grafo envelhece e passa a responder com confian&ccedil;a sobre estrutura que n&atilde;o existe mais. Docs e PDFs v&atilde;o para o LLM: use <code>--code-only</code> com material de cliente.</td>
+            </tr>
+            <tr>
+              <td><strong>notebooklm-py</strong><br><span style="color:var(--ink-3)">conhecimento</span></td>
+              <td><code>uv tool install "notebooklm-py[browser]"</code></td>
+              <td>N&atilde;o-oficial, sobre API n&atilde;o documentada, com login por cookie. Mantenha fora do caminho cr&iacute;tico: a fonte de verdade da equipe &eacute; o reposit&oacute;rio.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>O <code>doctor.mjs</code> relata quais est&atilde;o presentes &mdash; e <strong>acusa erro se duas autoridades de processo estiverem habilitadas ao mesmo tempo</strong>, que &eacute; o modo mais silencioso de perder assertividade.</p>
+    </section>
+
+    <!-- ========================================== 10. CAMADAS PROJ -->
+    <section id="camadas-projeto">
+      <h2><span class="num">EXTENSÃO</span>Camadas de projeto, sem misturar</h2>
+
+      <p>Cada projeto ganha um plugin próprio em <code>plugins/&lt;nome&gt;/</code>, declarado no mesmo <code>marketplace.json</code>. O projeto habilita só o que precisa:</p>
+
+<pre><code>{
+  "enabledPlugins": {
+    "core@agent-core": true,
+    "<span class="k">projeto-a</span>@agent-core": true
+  }
+}</code></pre>
+
+      <p>Um projeto que não habilita uma camada <strong>não enxerga</strong> as skills dela. O isolamento é por construção, não por disciplina — ninguém precisa lembrar de não misturar.</p>
+
+      <h4>Por que marketplace e não submodule</h4>
+      <div class="scroller">
+        <table>
+          <thead><tr><th></th><th>Marketplace</th><th>Submodule</th></tr></thead>
+          <tbody>
+            <tr><td>Conflito de merge</td><td>nenhum — vive fora do repo</td><td>ponteiro conflita</td></tr>
+            <tr><td>Atualizar todos os projetos</td><td>corrige uma vez</td><td>repo por repo</td></tr>
+            <tr><td>Isolamento entre camadas</td><td>garantido pelo <code>enabledPlugins</code></td><td>por disciplina</td></tr>
+            <tr><td>Onboarding</td><td>clonar o projeto basta</td><td><code>submodule update --init</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>A fronteira</h4>
+      <p>Se uma skill menciona um sistema específico pelo nome, ela <strong>não</strong> pertence ao núcleo. Núcleo é o que vale para qualquer projeto; camada é o que vale para um.</p>
+    </section>
+
+  </main>
+
+  <footer>
+    agent-core · Camada 0 implementada e testada (34/34) · Node 18+, zero dependências<br>
+    Camadas de projeto: a definir, uma de cada vez, depois que o núcleo estiver rodando.
+  </footer>
+
+</div>
+
+<script>
+  // Marca a seção visível no índice. Sem biblioteca, sem estado inicial escondido.
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('nav a'));
+    if (!links.length || !('IntersectionObserver' in window)) return;
+
+    var byId = {};
+    links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+
+    var seen = new Set();
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) seen.add(e.target.id); else seen.delete(e.target.id);
+      });
+      var first = null;
+      for (var i = 0; i < links.length && !first; i++) {
+        var id = links[i].getAttribute('href').slice(1);
+        if (seen.has(id)) first = id;
+      }
+      links.forEach(function (a) {
+        a.classList.toggle('here', a.getAttribute('href').slice(1) === first);
+      });
+    }, { rootMargin: '-10% 0px -70% 0px' });
+
+    document.querySelectorAll('main section').forEach(function (s) { obs.observe(s); });
+  })();
+</script>

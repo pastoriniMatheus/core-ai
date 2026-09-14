@@ -1,0 +1,81 @@
+{
+  "//": "Copie para .claude/settings.json do projeto e VERSIONE no git. E este arquivo que faz a equipe inteira herdar a configuracao ao clonar o repositorio.",
+
+  "extraKnownMarketplaces": {
+    "agent-core": {
+      "source": {
+        "source": "github",
+        "repo": "pastoriniMatheus/core-ai"
+      }
+    }
+  },
+
+  "enabledPlugins": {
+    "core@agent-core": true
+  },
+
+  "permissions": {
+    "//": "O ajuste de maior retorno e menor risco do kit inteiro. Cada comando rotineiro fora desta lista vira uma interrupcao no fluxo; dezenas por dia, por dev.",
+    "//regra": "Somente leitura e rotina de desenvolvimento. Nada que publique, apague historico ou toque em producao: isso continua pedindo confirmacao, de proposito.",
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git blame:*)",
+      "Bash(git stash list:*)",
+
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Bash(which:*)",
+      "Bash(pwd)",
+      "Bash(echo:*)",
+
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(npm ls:*)",
+      "Bash(yarn test:*)",
+      "Bash(pnpm test:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx jest:*)",
+      "Bash(node:*)",
+
+      "Bash(bundle exec:*)",
+      "Bash(rspec:*)",
+      "Bash(rubocop:*)",
+      "Bash(rake:*)",
+
+      "Bash(pytest:*)",
+      "Bash(ruff:*)",
+      "Bash(python -m:*)",
+
+      "Bash(go test:*)",
+      "Bash(go vet:*)",
+      "Bash(go build:*)",
+      "Bash(gofmt:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo check:*)",
+
+      "Bash(docker ps:*)",
+      "Bash(docker compose ps:*)",
+      "Bash(docker compose logs:*)",
+
+      "Bash(graphify query:*)",
+      "Bash(graphify path:*)",
+      "Bash(graphify explain:*)",
+
+      "Read(**)",
+      "Glob(**)",
+      "Grep(**)"
+    ],
+
+    "//ask": "Explicitamente NAO allowlistado, para continuar pedindo confirmacao: git push, git reset --hard, rm, deploy, migracao de banco, qualquer coisa que toque producao."
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agent-core",
+  "description": "Nucleo de diretrizes de agente: camada determinista (hooks), contexto, processo e economia. Base generica para todos os projetos.",
+  "owner": {
+    "name": "Matheus Pastorini",
+    "email": "pastorinimatheus@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "core",
+      "description": "Camada 0 determinista + skills de fase, mapeamento de codigo, economia de contexto e extracao de conhecimento em skill.",
+      "version": "0.1.0",
+      "source": "./plugins/core",
+      "category": "development"
+    }
+  ]
+}
