@@ -943,7 +943,11 @@ node scripts/install.mjs   ~/meu-projeto
 node scripts/doctor.mjs    ~/meu-projeto   <span class="c"># confirma</span>
 
 <span class="c"># 3. dentro do Claude Code, no projeto</span>
-/core-setup</code></pre>
+/core-init</code></pre>
+
+      <p>Um comando leva o projeto de &ldquo;plugin instalado&rdquo; a <strong>pleno</strong>: detecta a stack, pergunta <strong>uma vez</strong> o que n&atilde;o d&aacute; para inferir, instala o que voc&ecirc; autorizar, escreve a configura&ccedil;&atilde;o, constr&oacute;i o grafo, congela o baseline e confere no fim. O <code>session-start</code> oferece esse comando sozinho na primeira sess&atilde;o de um projeto ainda n&atilde;o configurado.</p>
+
+      <p>Para configurar uma pe&ccedil;a s&oacute;: <code>/core-setup</code> (projeto), <code>/core-tracker</code> (tracker), <code>/core-ferramentas</code> (ferramentas externas).</p>
 
       <p>O instalador &eacute; <strong>aditivo</strong>: hooks de outras ferramentas no mesmo evento s&atilde;o preservados, uma skill sua com o mesmo nome n&atilde;o &eacute; sobrescrita, e rodar duas vezes n&atilde;o duplica nada.</p>
 
