@@ -235,7 +235,8 @@ Só necessário para **editar**, não para usar.
 ```bash
 git clone https://github.com/pastoriniMatheus/core-ai.git
 cd core-ai
-node tests/hooks.test.mjs              # 97 casos, segundos
+node tests/hooks.test.mjs              # 97 casos: as guardas
+node tests/docs.test.mjs               # a documentacao ainda descreve o que existe?
 node scripts/aceitacao.mjs --offline   # instalação e guardas
 node scripts/aceitacao.mjs             # + sessões reais do Claude Code, ~10 min
 ```
@@ -254,6 +255,19 @@ node scripts/install.mjs   /caminho/do/projeto   # aponta para este clone
 node scripts/doctor.mjs    /caminho/do/projeto   # confirma
 ```
 
+Os scripts do repositório, e o que cada um faz:
+
+| Script | Papel |
+|---|---|
+| `install.mjs` | liga o núcleo num projeto (ou na máquina, com `--global`) |
+| `doctor.mjs` | diagnostica: hooks ligados, skills presentes, versão em dia |
+| `preflight.mjs` | o que a stack do projeto exige e a máquina não tem |
+| `tracker-setup.mjs` | grava e testa o acesso ao tracker (por trás do `/core-tracker`) |
+| `tracker.mjs` | busca card, comenta, move estado (por trás de `atacar-card`) |
+| `ferramentas.mjs` | instala Ponytail, Graphify, notebooklm (por trás do `/core-ferramentas`) |
+| `baseline.mjs` | mede tokens, turnos e tempo das sessões |
+| `aceitacao.mjs` | teste ponta a ponta com sessões reais do Claude Code |
+
 | Modo | Comando | Quando |
 |---|---|---|
 | plugin | `claude plugin install core@agent-core` | uso normal, e para a equipe |
@@ -263,6 +277,16 @@ node scripts/doctor.mjs    /caminho/do/projeto   # confirma
 O instalador é **aditivo**: mescla `permissions.allow`, preserva hooks de outras
 ferramentas, não sobrescreve uma skill sua de mesmo nome, e rodar duas vezes não
 duplica nada.
+
+## Documentação que não envelhece em silêncio
+
+`tests/docs.test.mjs` falha quando os documentos e o disco divergem — skill que
+existe e ninguém cita, comando prometido que sumiu, script órfão, manual atrás do
+README, versões fora de sincronia, âncora quebrada.
+
+Não verifica se o texto está **bom** — isso ninguém automatiza. Verifica se ele
+ainda descreve o que existe, que é onde a documentação apodrece primeiro. Roda
+junto com a aceitação.
 
 ## Ao mudar o núcleo: **incremente a versão**
 

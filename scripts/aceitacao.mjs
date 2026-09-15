@@ -106,6 +106,15 @@ roda("git", ["remote", "add", "origin", "https://github.com/exemplo/aceitacao.gi
 roda("git", ["branch", "-M", "main"], { cwd: PROJETO });
 roda("git", ["checkout", "-qb", "feat/cancelar"], { cwd: PROJETO });
 
+// --------------------------------------------------- 1b. documentacao
+// Documentacao que envelhece em silencio e o mesmo problema que os hooks
+// atacam no codigo: nada quebra, so para de ajudar.
+console.log(`
+${c.bold}1b. Documentacao${c.off}`);
+const docs = roda(process.execPath, [join(ROOT, "tests", "docs.test.mjs")]);
+afirma("documentacao descreve o que existe", docs.status === 0,
+  (docs.stdout || "").split("\n").filter((l) => l.includes("FAIL")).join("\n         "));
+
 // ------------------------------------------------------------ 2. preflight
 console.log(`\n${c.bold}2. Preflight${c.off}`);
 const pre = roda("node", [join(ROOT, "scripts", "preflight.mjs"), PROJETO, "--json"]);
@@ -144,7 +153,8 @@ escreve(".claude/core.json", JSON.stringify({
 console.log(`\n${c.bold}4. Diagnostico${c.off}`);
 const doc = roda("node", [join(ROOT, "scripts", "doctor.mjs"), PROJETO]);
 afirma("doctor sem erros", doc.status === 0);
-afirma("doctor confirma os hooks", /hooks do core ligados/.test(doc.stdout || ""));
+afirma("doctor confirma as guardas ativas",
+  /hooks do core ligados|plugin instalado/.test(doc.stdout || ""));
 
 // ------------------------------------------------- 5. hooks fora do runtime
 console.log(`\n${c.bold}5. Guardas (chamada direta)${c.off}`);
