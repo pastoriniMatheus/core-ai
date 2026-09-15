@@ -10,7 +10,7 @@
     {
       "name": "core",
       "description": "Camada 0 determinista + skills de fase, mapeamento de codigo, economia de contexto e extracao de conhecimento em skill.",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "source": "./plugins/core",
       "category": "development"
     }

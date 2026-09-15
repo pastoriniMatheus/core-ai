@@ -1,7 +1,7 @@
 {
   "name": "core",
   "description": "Nucleo de diretrizes de agente. Hooks deterministicos de verificacao, guarda de dependencias, maquina de fases e economia de contexto.",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "author": {
     "name": "Matheus Pastorini",
     "email": "pastorinimatheus@gmail.com"
