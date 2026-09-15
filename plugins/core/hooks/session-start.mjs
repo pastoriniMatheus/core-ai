@@ -9,15 +9,33 @@
 // Configuracao que ninguem lembra de fazer e configuracao que nao existe.
 // Este hook faz a primeira sessao do projeto avisar.
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { readInput } from "./lib/io.mjs";
 import { loadConfig } from "./lib/config.mjs";
+
+/**
+ * O checkpoint da sessao anterior, se ainda fizer sentido mostrar.
+ *
+ * Retomar e o momento em que o contexto vale mais e existe menos. Sem isto,
+ * "onde eu parei" custa reler o transcript inteiro — quando nao custa refazer.
+ */
+function checkpointRecente(cwd, cfg) {
+  const p = join(cwd, ".claude", "core-state", "checkpoint.md");
+  if (!existsSync(p)) return null;
+  const horas = (Date.now() - statSync(p).mtimeMs) / 3600000;
+  // Um retrato velho atrapalha mais do que ajuda: o trabalho ja seguiu por
+  // outro caminho e o checkpoint aponta para um estado que nao existe mais.
+  if (horas > (cfg.checkpoint?.validoPorHoras ?? 168)) return null;
+  try { return readFileSync(p, "utf8").trim(); } catch { return null; }
+}
 
 function main(input) {
   const cwd = input.cwd || process.cwd();
   const cfgPath = join(cwd, ".claude", "core.json");
   const pendencias = [];
+  const cfg = loadConfig(cwd);
+  const retomada = checkpointRecente(cwd, cfg);
 
   if (!existsSync(cfgPath)) {
     pendencias.push("`.claude/core.json` nao existe — o nucleo esta rodando so com defaults");
@@ -42,9 +60,24 @@ function main(input) {
     pendencias.push("`CLAUDE.md` ainda tem os placeholders `<comando>` do template");
   }
 
-  if (!pendencias.length) return;
+  if (!pendencias.length && !retomada) return;
 
-  const texto = [
+  const blocos = [];
+  if (retomada) {
+    blocos.push(
+      "Esta sessao continua um trabalho interrompido. O checkpoint abaixo foi",
+      "gravado no fim da sessao anterior:",
+      "",
+      retomada.split("\n").map((l) => "  " + l).join("\n"),
+      "",
+      "Confirme o estado antes de agir sobre ele — o checkpoint e um retrato do",
+      "que foi feito, nao uma garantia de que continua valendo. Se o usuario",
+      "pedir outra coisa, o pedido dele vence o checkpoint.",
+      "",
+    );
+  }
+
+  const texto = !pendencias.length ? "" : [
     "O nucleo de diretrizes (agent-core) esta ativo neste projeto, mas nao foi configurado:",
     "",
     ...pendencias.map((p) => `  - ${p}`),
@@ -54,9 +87,13 @@ function main(input) {
     "pediu para fazer isso — mencione em uma linha e siga.",
   ].join("\n");
 
+  const completo = blocos.length
+    ? blocos.join("\n") + (texto ? "\n" + texto : "")
+    : texto;
+
   process.stdout.write(
     JSON.stringify({
-      hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: texto },
+      hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: completo },
     })
   );
 }

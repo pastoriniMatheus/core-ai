@@ -9,7 +9,7 @@
 // Sem dependencia externa: roda em qualquer maquina que tenha o Claude Code.
 
 import { spawnSync } from "node:child_process";
-import { writeFileSync, mkdtempSync, mkdirSync, utimesSync, readFileSync, readdirSync } from "node:fs";
+import { writeFileSync, mkdtempSync, mkdirSync, utimesSync, readFileSync, readdirSync, rmSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -479,6 +479,67 @@ check(
   { cwd: projeto("pc-enoent", ["comando-que-nao-existe-xyz"]), transcript_path: editouETestou },
   "block" // shell existe e devolve erro: reprova de verdade, e correto avisar
 );
+
+console.log("\n=== checkpoint: onde a sessao parou ===");
+// Depender de alguem lembrar de anotar onde parou e a mesma aposta que este
+// nucleo recusa no resto: funciona quase sempre, e "quase" e onde o trabalho
+// se perde.
+{
+  const dir = join(TMP, "checkpoint");
+  mkdirSync(dir, { recursive: true });
+  const arq = join(dir, "codigo.ts");
+  writeFileSync(arq, "export const x = 1;\n");
+
+  const jsonl = (nome, eventos) => {
+    const p = join(dir, nome);
+    writeFileSync(p, eventos.map((e) => JSON.stringify(e)).join("\n") + "\n");
+    return p;
+  };
+
+  const comCard = jsonl("cp1.jsonl", [
+    { message: { role: "user", content: [{ type: "text", text: "ataque CRM-777 por favor" }] } },
+    { message: { role: "assistant", content: [{ type: "tool_use", name: "Edit", input: { file_path: arq } }] } },
+    { message: { role: "assistant", content: [{ type: "text", text: "Parei na fase PROVAR, falta o teste RED." }] } },
+  ]);
+
+  const rodaCp = (entrada) =>
+    spawnSync(process.execPath, [join(HOOKS, "stop-checkpoint.mjs")],
+      { input: JSON.stringify(entrada), encoding: "utf8", timeout: 30000 });
+  const leCp = () => {
+    try { return readFileSync(join(dir, ".claude", "core-state", "checkpoint.md"), "utf8"); }
+    catch { return ""; }
+  };
+  const limpa = () => rmSync(join(dir, ".claude"), { recursive: true, force: true });
+  const afirmaCp = (nome, cond, detalhe = "") => {
+    if (cond) { passed++; console.log(`  PASS  ${nome}`); }
+    else { failed++; console.log(`  FAIL  ${nome}${detalhe ? "  " + detalhe : ""}`); }
+  };
+
+  limpa();
+  rodaCp({ cwd: dir, transcript_path: comCard });
+  const md = leCp();
+  afirmaCp("grava checkpoint quando houve edicao", md.length > 0);
+  afirmaCp("acha o card citado na conversa", md.includes("CRM-777"));
+  afirmaCp("registra onde parou", md.includes("fase PROVAR"));
+  afirmaCp("acusa falta de prova", md.includes("SEM PROVA"));
+
+  // O identificador NAO pode vir de caminho de arquivo: um diretorio chamado
+  // "...-ETUS-0135-..." viraria "card ETUS-0135", e a retomada da sessao
+  // seguinte abriria apontando para um card que nao existe.
+  const semCard = jsonl("cp2.jsonl", [
+    { message: { role: "user", content: [{ type: "text", text: "ajusta esse arquivo" }] } },
+    { message: { role: "assistant", content: [{ type: "tool_use", name: "Edit", input: { file_path: arq } }] } },
+  ]);
+  limpa();
+  rodaCp({ cwd: dir, transcript_path: semCard });
+  afirmaCp("nao inventa card a partir de caminho", leCp().length > 0 && !leCp().includes("Card:"));
+
+  // Sessao que so leu nao gera checkpoint: ruido em ferramenta de retomada faz
+  // ninguem ler o que importa.
+  limpa();
+  rodaCp({ cwd: dir, transcript_path: soLeitura });
+  afirmaCp("sessao sem edicao nao gera checkpoint", leCp() === "");
+}
 
 console.log("\n=== aviso de projeto nao configurado ===");
 function avisa(cwd) {

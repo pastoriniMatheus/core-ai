@@ -70,6 +70,29 @@ export const DEFAULTS = {
     ],
   },
 
+  checkpoint: {
+    // Grava onde a sessao parou, para a proxima retomar sem reler tudo.
+    enabled: true,
+
+    // Quanto tempo um checkpoint ainda vale a pena mostrar. Depois disso o
+    // trabalho provavelmente seguiu por outro caminho, e um retrato velho
+    // atrapalha mais do que ajuda.
+    validoPorHoras: 168,
+
+    // Formato do identificador de card, para achar o que estava em foco.
+    // Sem barra invertida de proposito: "\b" e "\d" num literal de string
+    // perdem um nivel de escape com facilidade — "\b" chega como backspace, e o
+    // padrao para de casar em silencio. "[0-9]" e "[^A-Za-z0-9]" dizem o mesmo
+    // e atravessam shell, JSON e editor sem se desfazer.
+    cardPattern: "(^|[^A-Za-z0-9])([A-Z]{2,10}-[0-9]+)([^A-Za-z0-9]|$)",
+
+    // Comentar no card ao fim da sessao. DESLIGADO por padrao: um comentario
+    // automatico por sessao vira ruido no tracker do time, e ruido faz ninguem
+    // ler o que importa. Ligue quando o time trabalhar cards longos, em varias
+    // sessoes, com mais de uma pessoa acompanhando.
+    comentarNoCard: false,
+  },
+
   graph: {
     enabled: true,
     staleAfterCommits: 25,

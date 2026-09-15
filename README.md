@@ -162,7 +162,8 @@ Regra: **tudo que puder descer de camada, desce.**
 | `pre-bash-guard` | `Bash` | Dependência nova exige subir a escada. Grafo desatualizado avisa antes de mentir |
 | `pre-publish-guard` | `Bash` e `mcp__*` | PR ou card sem permissão explícita não passa, **pelos dois caminhos**. Estado final do card é bloqueio **sem escape** |
 | `stop-verify` | `Stop` | Código alterado sem teste rodado depois não encerra a sessão |
-| `session-start` | `SessionStart` | Projeto sem configuração avisa, em vez de rodar meio-mudo em silêncio |
+| `stop-checkpoint` | `Stop` | Grava onde a sessão parou: card, branch, arquivos, se houve prova, e o que estava sendo feito |
+| `session-start` | `SessionStart` | Entrega o checkpoint da sessão anterior, e avisa o que falta configurar |
 
 Autodetecção: Ruby, JS/TS, Python, Go, PHP, Shell, Swift, Kotlin, JSON e YAML.
 Ferramenta ausente = hook silencioso, nunca hook quebrado — a existência do
@@ -287,6 +288,28 @@ README, versões fora de sincronia, âncora quebrada.
 Não verifica se o texto está **bom** — isso ninguém automatiza. Verifica se ele
 ainda descreve o que existe, que é onde a documentação apodrece primeiro. Roda
 junto com a aceitação.
+
+## Retomar de onde parou
+
+Uma sessão interrompida não deixa rastro além do transcript, e o transcript é
+longo demais para servir de ponto de partida. Duas semanas depois, "onde eu
+parei" custa reler tudo — quando não custa refazer.
+
+O `stop-checkpoint` grava em `.claude/core-state/checkpoint.md`: card em foco,
+branch, último commit, arquivos tocados, **se houve prova**, o pedido original e
+o que o agente estava dizendo ao parar. O `session-start` entrega isso na sessão
+seguinte.
+
+Só quando houve edição de código — checkpoint em toda sessão é ruído, e ruído em
+ferramenta de retomada faz ninguém ler o que importa. Vence em 7 dias: um retrato
+velho atrapalha mais do que ajuda.
+
+O card é procurado **só no que foi conversado**, nunca em caminho de arquivo — um
+diretório chamado `...-ETUS-0135-...` viraria "card ETUS-0135" e a retomada
+apontaria para um card que não existe.
+
+Comentar o checkpoint no card é opt-in (`checkpoint.comentarNoCard`): um
+comentário automático por sessão vira ruído no tracker do time.
 
 ## Ao mudar o núcleo: **incremente a versão**
 
