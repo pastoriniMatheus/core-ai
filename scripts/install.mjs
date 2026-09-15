@@ -177,16 +177,17 @@ if (!MODO_MARKETPLACE) {
         preservados++;
         continue;
       }
-      // O comando referencia scripts do nucleo: resolve o caminho real.
-      // Substituicao LITERAL de um marcador sem acento — regex com "ú" atravessa
-      // shell, encoding e ferramenta de edicao, e em algum ponto deixa de casar.
-      const conteudo = readFileSync(join(origem, nome), "utf8")
-        // Os comandos SAO versionados: nao podem carregar o caminho desta
-        // maquina, ou o `/core-doctor` do colega aponta para um diretorio que
-        // nao existe. Eles referenciam a variavel; o valor e por maquina, no
-        // settings.local.json.
-        .split("{{CORE_ROOT}}").join("$AGENT_CORE_ROOT")
-        .split("{{PROJECT}}").join(".");
+      // Nada a substituir: os comandos JA referenciam $AGENT_CORE_ROOT na
+      // origem. Eles sao versionados e nao podem carregar o caminho desta
+      // maquina, ou o `/core-doctor` do colega aponta para um diretorio que
+      // nao existe; o valor e por maquina — aqui o install o escreve no
+      // settings.local.json, e na instalacao por plugin o session-start o
+      // reescreve com a raiz do plugin.
+      //
+      // O marcador {{CORE_ROOT}} morava aqui e so era resolvido nesta copia.
+      // Era uma segunda convencao para o mesmo caminho, e a instalacao por
+      // plugin — que nao passa por aqui — recebia o marcador cru.
+      const conteudo = readFileSync(join(origem, nome), "utf8");
       writeFileSync(alvo, conteudo.trimEnd() + `\n\n${marca}\n`);
       copiados++;
     }

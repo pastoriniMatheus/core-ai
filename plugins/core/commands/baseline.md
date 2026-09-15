@@ -5,7 +5,7 @@ argument-hint: [--days N] [--save nome] [--compare nome]
 
 Rode a medicao de sessoes e interprete os numeros.
 
-Execute `node {{CORE_ROOT}}/scripts/baseline.mjs $ARGUMENTS` a partir da raiz
+Execute `node $AGENT_CORE_ROOT/scripts/baseline.mjs $ARGUMENTS` a partir da raiz
 do projeto.
 
 Ao apresentar o resultado:
