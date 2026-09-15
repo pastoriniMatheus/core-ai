@@ -40,7 +40,9 @@ function main(input) {
   if (!existsSync(cfgPath)) {
     pendencias.push("`.claude/core.json` nao existe — o nucleo esta rodando so com defaults");
   } else {
-    const cfg = loadConfig(cwd);
+    // `cfg` ja veio de cima. Redeclarar aqui relia e reparseava o core.json no
+    // caminho de inicializacao, e sombreava a variavel externa — invisivel hoje
+    // porque os dois valores sao iguais, e uma armadilha para quem mexer depois.
     let bruto = {};
     try { bruto = JSON.parse(readFileSync(cfgPath, "utf8")); } catch { /* defaults */ }
 

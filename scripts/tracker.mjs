@@ -156,8 +156,12 @@ const linear = {
   },
 
   async card(id) {
+    // `id` na selecao nao e decorativo: commentCreate exige o UUID da issue, e
+    // sem pedi-lo aqui `issue.id` era sempre undefined — o comentario ia com o
+    // identificador humano ("EVO-123") no lugar, e so funcionaria se o Linear
+    // aceitasse isso por acaso.
     const d = await this.gql(
-      `query($id:String!){ issue(id:$id){ identifier title description priority
+      `query($id:String!){ issue(id:$id){ id identifier title description priority
          state{name} assignee{name} url } }`,
       { id }
     );
@@ -167,9 +171,10 @@ const linear = {
 
   async comentar(id, texto) {
     const issue = await this.card(id);
+    if (!issue.id) erro(`nao consegui resolver o id interno de ${id}.`);
     return this.gql(
       `mutation($i:String!,$b:String!){ commentCreate(input:{issueId:$i,body:$b}){ success } }`,
-      { i: issue.id || id, b: texto }
+      { i: issue.id, b: texto }
     );
   },
 

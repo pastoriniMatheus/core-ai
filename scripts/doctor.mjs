@@ -43,11 +43,27 @@ if (existsSync(hooksJson)) {
   ERR("hooks.json ausente", hooksJson);
 }
 
-for (const s of ["post-edit-verify", "pre-bash-guard", "stop-verify"]) {
-  const p = join(ROOT, "plugins", "core", "hooks", `${s}.mjs`);
-  if (!existsSync(p)) { ERR(`hook ${s} ausente`); continue; }
-  const r = spawnSync(process.execPath, ["--check", p], { encoding: "utf8" });
-  r.status === 0 ? OK(`hook ${s}`) : ERR(`hook ${s} tem erro de sintaxe`, r.stderr?.split("\n")[0]);
+// Enumerados do disco, nunca listados a mao. A lista fixa tinha tres nomes
+// enquanto o nucleo ja tinha seis hooks — e os tres de fora incluiam o portao
+// de publicacao. Um erro de sintaxe nele era reportado como saudavel, e como
+// io.mjs degradava tudo para exit 0, a guarda tambem ficava muda em execucao.
+const dirHooks = join(ROOT, "plugins", "core", "hooks");
+const hooksNoDisco = (() => {
+  try { return readdirSync(dirHooks).filter((f) => f.endsWith(".mjs")); } catch { return []; }
+})();
+
+if (!hooksNoDisco.length) ERR("nenhum hook encontrado", dirHooks);
+for (const arquivo of hooksNoDisco) {
+  const nome = arquivo.replace(/\.mjs$/, "");
+  const r = spawnSync(process.execPath, ["--check", join(dirHooks, arquivo)], { encoding: "utf8" });
+  r.status === 0 ? OK(`hook ${nome}`) : ERR(`hook ${nome} tem erro de sintaxe`, r.stderr?.split("\n")[0]);
+}
+
+// As bibliotecas tambem: um erro de sintaxe em lib/ derruba todo hook que a importa.
+const dirLib = join(dirHooks, "lib");
+for (const arquivo of (() => { try { return readdirSync(dirLib).filter((f) => f.endsWith(".mjs")); } catch { return []; } })()) {
+  const r = spawnSync(process.execPath, ["--check", join(dirLib, arquivo)], { encoding: "utf8" });
+  if (r.status !== 0) ERR(`lib/${arquivo} tem erro de sintaxe`, r.stderr?.split("\n")[0]);
 }
 
 const mk = readJson(join(ROOT, ".claude-plugin", "marketplace.json"));
