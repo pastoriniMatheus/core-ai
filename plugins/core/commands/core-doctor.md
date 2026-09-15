@@ -6,7 +6,7 @@ Rode o diagnostico do nucleo e interprete o resultado para o usuario.
 
 1. Localize o repositorio do nucleo. Tente, em ordem: `.claude/core/scripts/doctor.mjs`,
    o caminho em `agentCoreRoot` de `.claude/core.json`, ou pergunte ao usuario.
-2. Execute `node {{CORE_ROOT}}/scripts/doctor.mjs "{{PROJECT}}"`.
+2. Execute `node $AGENT_CORE_ROOT/scripts/doctor.mjs "."`.
 3. Resuma em portugues: o que esta ok, o que e aviso, o que e erro.
 4. Para cada erro ou aviso, ofereca a correcao concreta. Nao aplique nada sem
    confirmacao — configuracao de agente e compartilhada com a equipe.
