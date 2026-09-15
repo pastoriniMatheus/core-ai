@@ -1116,7 +1116,11 @@ node scripts/baseline.mjs --days 7 --compare antes</code></pre>
       <p><code>claude plugin update</code> compara <strong>s&oacute; a vers&atilde;o declarada</strong>. Um reposit&oacute;rio com skills novas e a mesma vers&atilde;o faz o comando responder <em>&ldquo;j&aacute; est&aacute; na &uacute;ltima&rdquo;</em> &mdash; e o time fica com o cache antigo, sem erro vis&iacute;vel, porque a mensagem de sucesso &eacute; id&ecirc;ntica &agrave; de quando n&atilde;o h&aacute; o que atualizar.</p>
 <pre><code>claude plugin marketplace update agent-core
 claude plugin update core@agent-core</code></pre>
-      <p>S&atilde;o dois comandos: atualizar o marketplace n&atilde;o atualiza o plugin. O <code>doctor.mjs</code> avisa quando a vers&atilde;o instalada difere da do reposit&oacute;rio.</p>
+      <p>S&atilde;o dois comandos: atualizar o marketplace n&atilde;o atualiza o plugin.</p>
+
+      <h3>Conferir</h3>
+<pre><code>/core-doctor</code></pre>
+      <p>Diz o que est&aacute; de fato ativo: hooks ligados, skills presentes, vers&atilde;o do plugin em dia, e o que ainda falta configurar. Uma configura&ccedil;&atilde;o de agente falha em sil&ecirc;ncio &mdash; nada quebra visivelmente, ela s&oacute; para de ajudar. Este comando torna o sil&ecirc;ncio vis&iacute;vel.</p>
     </section>
 
     <!-- =============================================== VALIDACAO -->
