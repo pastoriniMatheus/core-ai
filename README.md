@@ -267,6 +267,8 @@ Os scripts do repositório, e o que cada um faz:
 | `tracker.mjs` | busca card, comenta, move estado (por trás de `atacar-card`) |
 | `ferramentas.mjs` | instala Ponytail, Graphify, notebooklm (por trás do `/core-ferramentas`) |
 | `baseline.mjs` | mede tokens, turnos e tempo das sessões |
+| `autorizar.mjs` | libera UMA publicação por MCP (o portão diz quando usar) |
+| `gerar-referencia.mjs` | gera `docs/CONFIGURACAO.md` a partir do código |
 | `aceitacao.mjs` | teste ponta a ponta com sessões reais do Claude Code |
 
 | Modo | Comando | Quando |
@@ -299,6 +301,12 @@ O `stop-checkpoint` grava em `.claude/core-state/checkpoint.md`: card em foco,
 branch, último commit, arquivos tocados, **se houve prova**, o pedido original e
 o que o agente estava dizendo ao parar. O `session-start` entrega isso na sessão
 seguinte.
+
+O arquivo guarda o **pedido do usuário**, que pode conter segredo. Por isso a
+pasta `.claude/core-state/` **se protege sozinha**: o núcleo escreve um
+`.gitignore` com `*` dentro dela, e a proteção vale mesmo quem instalou só pelo
+plugin — que nunca roda o instalador e nunca teria a pasta no `.gitignore` do
+projeto.
 
 Só quando houve edição de código — checkpoint em toda sessão é ruído, e ruído em
 ferramenta de retomada faz ninguém ler o que importa. Vence em 7 dias: um retrato

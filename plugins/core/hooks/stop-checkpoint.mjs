@@ -14,17 +14,22 @@
 // automático por sessão vira ruído no tracker do time, e ruído faz ninguém ler
 // o que importa.
 
-import { writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { writeFileSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { run, pass } from "./lib/io.mjs";
 import { loadConfig } from "./lib/config.mjs";
 import { montar, emTexto } from "./lib/checkpoint.mjs";
+import { dirEstado } from "./lib/estado.mjs";
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 
 run(async (input) => {
+  // O stop-verify pode bloquear e o Stop reentra. Regravar o checkpoint a
+  // cada tentativa nao quebra nada, mas gasta o tempo do usuario a toa.
+  if (input.stop_hook_active) pass();
+
   const cfg = loadConfig(input.cwd);
   if (!cfg.checkpoint?.enabled) pass();
 
@@ -35,8 +40,10 @@ run(async (input) => {
   });
   if (!c) pass(); // sessão sem edição de código: não há o que retomar
 
-  const dir = join(input.cwd || ".", ".claude", "core-state");
-  mkdirSync(dir, { recursive: true });
+  // dirEstado ja cria a pasta protegida: o checkpoint guarda o pedido do
+  // usuario, que pode conter segredo, e nao pode depender do .gitignore do
+  // projeto estar certo.
+  const dir = dirEstado(input.cwd);
   writeFileSync(join(dir, "checkpoint.json"), JSON.stringify(c, null, 2) + "\n");
   writeFileSync(join(dir, "checkpoint.md"), emTexto(c) + "\n");
 

@@ -541,6 +541,48 @@ console.log("\n=== checkpoint: onde a sessao parou ===");
   afirmaCp("sessao sem edicao nao gera checkpoint", leCp() === "");
 }
 
+console.log("\n=== o estado local nao pode vazar para o repositorio ===");
+// O checkpoint guarda o PEDIDO do usuario, que pode conter segredo: "corrige o
+// billing, o token e sk-live-X". O instalador poe a pasta no .gitignore, mas
+// quem instala pelo plugin — o caminho principal — nunca roda o instalador.
+// Por isso a pasta se protege sozinha.
+{
+  const dir = join(TMP, "vazamento");
+  mkdirSync(dir, { recursive: true });
+  const g = (args) => spawnSync("git", args, { cwd: dir, encoding: "utf8", timeout: 10000 });
+  g(["init", "-q"]);
+  g(["config", "user.email", "t@t"]);
+  g(["config", "user.name", "T"]);
+  // .gitignore do projeto SEM mencionar core-state: e o caso real.
+  writeFileSync(join(dir, ".gitignore"), "node_modules/\n");
+  const cod = join(dir, "cod.ts");
+  writeFileSync(cod, "export const x = 1;\n");
+  g(["add", "-A"]);
+  g(["commit", "-qm", "inicio"]);
+
+  const tr = join(dir, "s.jsonl");
+  writeFileSync(tr, [
+    { message: { role: "user", content: [{ type: "text", text: "o token e sk-live-SEGREDO, corrige" }] } },
+    { message: { role: "assistant", content: [{ type: "tool_use", name: "Edit", input: { file_path: cod } }] } },
+  ].map((e) => JSON.stringify(e)).join("\n") + "\n");
+
+  spawnSync(process.execPath, [join(HOOKS, "stop-checkpoint.mjs")],
+    { input: JSON.stringify({ cwd: dir, transcript_path: tr }), encoding: "utf8", timeout: 30000 });
+
+  const protegido = (() => {
+    try { return readFileSync(join(dir, ".claude", "core-state", ".gitignore"), "utf8").includes("*"); }
+    catch { return false; }
+  })();
+  if (protegido) { passed++; console.log("  PASS  a pasta de estado se protege sozinha"); }
+  else { failed++; console.log("  FAIL  .claude/core-state/.gitignore nao foi criado"); }
+
+  g(["add", "-A"]);
+  const staged = (g(["diff", "--cached", "--name-only"]).stdout || "");
+  const vazou = staged.split("\n").filter((l) => l.includes("checkpoint"));
+  if (!vazou.length) { passed++; console.log("  PASS  checkpoint nao entra no git"); }
+  else { failed++; console.log(`  FAIL  vazou para o git: ${vazou.join(", ")}`); }
+}
+
 console.log("\n=== aviso de projeto nao configurado ===");
 function avisa(cwd) {
   const r = spawnSync(process.execPath, [join(HOOKS, "session-start.mjs")], {

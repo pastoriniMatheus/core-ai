@@ -141,7 +141,7 @@ run(async (input) => {
   if (ehMcp) {
     linhas.push("  Com a autorizacao em maos, libere UMA publicacao e repita a chamada:");
     linhas.push("");
-    linhas.push("    mkdir -p .claude/core-state && touch .claude/core-state/publish-ok");
+    linhas.push("    node \"$AGENT_CORE_ROOT/scripts/autorizar.mjs\"");
     linhas.push("");
     linhas.push("  O token vale uma vez so e vence em poucos minutos.");
   } else {
