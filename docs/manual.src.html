@@ -454,6 +454,8 @@
       <li><a href="#portao">O portão de publicação</a></li>
       <li><a href="#camada3">Camada 3 · custo</a></li>
       <li><a href="#instalar">Instalar</a></li>
+      <li><a href="#tracker">Do card à entrega</a></li>
+      <li><a href="#instalar-ferramentas">Ferramentas externas</a></li>
       <li><a href="#medir">Medir</a></li>
       <li><a href="#rollout">Rollout</a></li>
       <li><a href="#validacao">Validado em sessão real</a></li>
@@ -1028,63 +1030,93 @@ node scripts/baseline.mjs --days 7 --compare antes</code></pre>
       </ol>
     </section>
 
-        <!-- ============================================== INSTALAR -->
-    <section id="instalar-escopo">
-      <h2><span class="num">COME&Ccedil;AR</span>Instalar: uma decis&atilde;o s&oacute;</h2>
-      <p class="lede">Voc&ecirc; n&atilde;o copia nada manualmente. Um script escreve tudo; a &uacute;nica escolha &eacute; o escopo.</p>
+            <!-- =============================================== TRACKER -->
+    <section id="tracker">
+      <h2><span class="num">TRABALHO</span>Do card &agrave; entrega</h2>
+      <p class="lede">Configure o tracker uma vez, e o identificador vira o comando.</p>
+
+      <p>Dentro de qualquer projeto:</p>
+      <blockquote style="margin:0 0 20px;padding:12px 18px;border-left:3px solid var(--accent);color:var(--ink);font-size:17px">ataque CRM-540</blockquote>
+
+      <p>A skill <code>atacar-card</code> busca o card, conduz as seis fases &mdash; fixar o terreno, investigar, decidir, implementar, provar, publicar &mdash; e <strong>para no port&atilde;o</strong> pedindo autoriza&ccedil;&atilde;o antes da PR e antes de mover o card.</p>
+
+      <h3>Configurar</h3>
+<pre><code>/core-tracker</code></pre>
+      <p>Pergunta o tracker, a URL e o token, <strong>testa a conex&atilde;o de verdade</strong> e s&oacute; ent&atilde;o grava. Se o teste falhar, nada &eacute; escrito: credencial que parece configurada e falha no meio de outra tarefa &eacute; pior que credencial ausente.</p>
+
+      <p>Antes de perguntar qualquer coisa, ele <strong>procura o que j&aacute; existe</strong>. Um projeto que j&aacute; fala com o tracker por MCP tem URL, workspace e token no <code>env</code> do servidor &mdash; pedir credencial a quem j&aacute; configurou tudo &eacute; o jeito mais r&aacute;pido de o time concluir que a ferramenta n&atilde;o entende o pr&oacute;prio ambiente.</p>
 
       <div class="scroller">
         <table>
-          <thead><tr><th></th><th>Por projeto (padr&atilde;o)</th><th>Global</th></tr></thead>
+          <thead><tr><th>Tracker</th><th>O que precisa</th><th>Onde achar o token</th></tr></thead>
           <tbody>
-            <tr><td>Comando</td><td><code>install.mjs &lt;projeto&gt;</code></td><td><code>install.mjs --global</code></td></tr>
-            <tr><td>Vale em</td><td>s&oacute; naquele projeto</td><td><strong>todos</strong> os projetos da m&aacute;quina</td></tr>
-            <tr><td>Instala</td><td>hooks, skills, comandos, <code>CLAUDE.md</code>, <code>CONTEXT.md</code>, <code>core.json</code>, permiss&otilde;es</td><td>s&oacute; hooks, skills e comandos</td></tr>
-            <tr><td>Repete por projeto?</td><td>sim</td><td>n&atilde;o</td></tr>
+            <tr><td>Plane</td><td>URL e workspace</td><td>avatar &rarr; Settings &rarr; API tokens</td></tr>
+            <tr><td>Linear</td><td>s&oacute; o token</td><td>Settings &rarr; API &rarr; Personal API keys</td></tr>
+            <tr><td>Jira</td><td>URL e e-mail</td><td>id.atlassian.com &rarr; Security &rarr; API tokens</td></tr>
+            <tr><td>GitHub Issues</td><td>o reposit&oacute;rio</td><td><code>gh auth token</code></td></tr>
           </tbody>
         </table>
       </div>
+
+      <h3>O que passa e o que para</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>A&ccedil;&atilde;o</th><th>Com a sua permiss&atilde;o</th></tr></thead>
+          <tbody>
+            <tr><td>buscar o card, comentar nele</td><td>passa livre &mdash; n&atilde;o &eacute; publica&ccedil;&atilde;o</td></tr>
+            <tr><td>abrir PR</td><td>libera</td></tr>
+            <tr><td>mover para revis&atilde;o</td><td>libera</td></tr>
+            <tr><td><strong>mover para o estado final</strong></td><td><strong>nega mesmo assim</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout">
+        <p><strong>Autoriza&ccedil;&atilde;o n&atilde;o transfere julgamento.</strong> Voc&ecirc; pode autorizar o agente a publicar o trabalho; n&atilde;o pode autoriz&aacute;-lo a <em>ter revisado</em> o trabalho. Fechar um card &eacute; o julgamento de quem revisou &mdash; por isso esse &eacute; o &uacute;nico bloqueio do n&uacute;cleo sem escape, nos tr&ecirc;s caminhos: comando de shell, o script do pr&oacute;prio n&uacute;cleo e chamada MCP.</p>
+      </div>
+
+      <p>Sete testes cobrem essa regra, incluindo o nome do estado em portugu&ecirc;s &mdash; ele varia por projeto.</p>
+    </section>
+
+    <!-- ========================================== FERRAMENTAS-CMD -->
+    <section id="instalar-ferramentas">
+      <h2><span class="num">EXTENS&Atilde;O</span>Instalar as ferramentas externas</h2>
+      <p class="lede">Um comando diagnostica, instala e configura &mdash; e pergunta onde o grafo roda.</p>
+
+<pre><code>/core-ferramentas</code></pre>
+
+      <p>Sem confirma&ccedil;&atilde;o nada &eacute; executado: ele primeiro relata o que existe, o que falta e a armadilha de cada uma. Mexer na m&aacute;quina de algu&eacute;m &eacute; decis&atilde;o de quem usa.</p>
+
+      <h3>Graphify: local ou servidor</h3>
+      <div class="pair">
+        <div class="panel hard">
+          <span class="tag">Local &mdash; padr&atilde;o</span>
+          <p>O grafo vive em <code>graphify-out/</code>, fora do git, e o hook post-commit o reconstr&oacute;i a cada commit.</p>
+          <p>Zero infra para manter. Cada pessoa tem o seu.</p>
+        </div>
+        <div class="panel soft">
+          <span class="tag">Servidor MCP</span>
+          <p>Um servidor s&oacute;, o time consulta por MCP.</p>
+          <p>Compensa quando o build fica lento num reposit&oacute;rio grande &mdash; ao custo de mais uma pe&ccedil;a para manter, e de <strong>algu&eacute;m precisar reconstruir o grafo a cada push</strong>, sen&atilde;o o servidor serve um mapa velho para todo mundo de uma vez.</p>
+        </div>
+      </div>
+
+      <p>A configura&ccedil;&atilde;o do modo servidor &eacute; escrita <strong>mesmo antes de o servidor existir</strong>, com a URL por preencher: quando ele subir, troca-se a URL e nada mais muda no projeto. Decidir por servidor antes de ter medido o tempo de build &eacute; criar manuten&ccedil;&atilde;o para um problema hipot&eacute;tico.</p>
 
       <div class="callout warn">
-        <p><strong>O pre&ccedil;o do global:</strong> as guardas valem mesmo &mdash; inclusive num reposit&oacute;rio de terceiro que voc&ecirc; s&oacute; foi ler. Bloquear <code>npm install</code> em c&oacute;digo que n&atilde;o &eacute; seu incomoda r&aacute;pido.</p>
+        <p>O grafo &eacute; constru&iacute;do com <code>--code-only</code>: parsing local por tree-sitter, <strong>nada sai da m&aacute;quina</strong>. Sem esse flag, documentos e PDFs do reposit&oacute;rio v&atilde;o para o LLM configurado &mdash; num projeto com contrato de cliente, &eacute; a diferen&ccedil;a entre local e vazamento.</p>
       </div>
 
-      <p><strong>A combina&ccedil;&atilde;o que funciona:</strong> global uma vez, e depois por projeto naquele onde voc&ecirc; trabalha de verdade. O segundo comando acrescenta o que s&oacute; faz sentido por projeto e n&atilde;o duplica os hooks.</p>
+      <h3>O que n&atilde;o entra</h3>
+      <p><strong>mattpocock/skills.</strong> Quando essa escolha foi feita, o n&uacute;cleo n&atilde;o tinha skills pr&oacute;prias. Hoje <code>fase</code> faz o alinhamento, <code>atacar-card</code> conduz a implementa&ccedil;&atilde;o e <code>entregar-trabalho</code> fecha a entrega &mdash; as tr&ecirc;s escritas a partir das skills do pr&oacute;prio time. Instalar por cima criaria duas autoridades de processo disputando cada decis&atilde;o, que &eacute; o erro que este n&uacute;cleo existe para eliminar.</p>
 
-<pre><code><span class="c"># 1. uma vez, para todos os projetos</span>
-node scripts/install.mjs --global
+      <p><strong>Obsidian.</strong> O <code>CONTEXT.md</code> e os <code>docs/</code> j&aacute; fazem o papel de conhecimento versionado, e um vault separado seria mais uma coisa a manter em sincronia &mdash; vivendo fora do reposit&oacute;rio, que &eacute; onde decidimos que mora a verdade da equipe. Quem quiser o grafo naveg&aacute;vel tem <code>graphify . --obsidian</code>: um flag, n&atilde;o uma ferramenta a mais.</p>
 
-<span class="c"># 2. em cada projeto de verdade</span>
-node scripts/preflight.mjs ~/meu-projeto   <span class="c"># o que falta instalar</span>
-node scripts/install.mjs   ~/meu-projeto
-node scripts/doctor.mjs    ~/meu-projeto   <span class="c"># confirma</span>
-
-<span class="c"># 3. dentro do Claude Code, no projeto</span>
-/core-setup</code></pre>
-
-      <p>O instalador &eacute; <strong>aditivo</strong>: hooks de outras ferramentas no mesmo evento s&atilde;o preservados, uma skill sua com o mesmo nome n&atilde;o &eacute; sobrescrita, e rodar duas vezes n&atilde;o duplica nada.</p>
-
-      <h3>O que vai para o git e o que fica na m&aacute;quina</h3>
-      <p>Os hooks do modo local carregam o caminho absoluto do n&uacute;cleo nesta m&aacute;quina. Versionar isso quebraria o projeto para todo mundo: no clone do colega, o hook aponta para um diret&oacute;rio que n&atilde;o existe &mdash; e falha em sil&ecirc;ncio.</p>
-
-      <div class="scroller">
-        <table>
-          <thead><tr><th>Arquivo</th><th>Cont&eacute;m</th><th>Git</th></tr></thead>
-          <tbody>
-            <tr><td><code>.claude/settings.json</code></td><td>permiss&otilde;es, marketplace</td><td>versionar</td></tr>
-            <tr><td><code>.claude/settings.local.json</code></td><td>hooks e <code>AGENT_CORE_ROOT</code> desta m&aacute;quina, credenciais</td><td><strong>nunca</strong></td></tr>
-            <tr><td><code>.claude/skills/</code> <code>commands/</code></td><td>as 6 skills e os 4 comandos</td><td>versionar</td></tr>
-            <tr><td><code>CLAUDE.md</code> <code>CONTEXT.md</code> <code>core.json</code></td><td>roteador, vocabul&aacute;rio, ajustes</td><td>versionar</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <p>Os comandos versionados referenciam <code>$AGENT_CORE_ROOT</code> em vez do caminho real; cada m&aacute;quina define o valor no seu arquivo local. Um teste garante que <strong>nenhum arquivo versionado carregue caminho de m&aacute;quina</strong>.</p>
-
-      <h3>Prova em trinta segundos</h3>
-      <p>Depois de instalar, pe&ccedil;a ao agente, dentro do projeto:</p>
-      <blockquote style="margin:0 0 16px;padding:12px 18px;border-left:3px solid var(--rule-strong);color:var(--ink-2)">Adicione a depend&ecirc;ncia lodash usando npm install.</blockquote>
-      <p>Ele tem de ser <strong>bloqueado</strong> com a escada da pregui&ccedil;a. Se instalar direto, algo n&atilde;o ligou &mdash; rode o <code>doctor.mjs</code>.</p>
+      <h3>Atualizar o n&uacute;cleo</h3>
+      <p><code>claude plugin update</code> compara <strong>s&oacute; a vers&atilde;o declarada</strong>. Um reposit&oacute;rio com skills novas e a mesma vers&atilde;o faz o comando responder <em>&ldquo;j&aacute; est&aacute; na &uacute;ltima&rdquo;</em> &mdash; e o time fica com o cache antigo, sem erro vis&iacute;vel, porque a mensagem de sucesso &eacute; id&ecirc;ntica &agrave; de quando n&atilde;o h&aacute; o que atualizar.</p>
+<pre><code>claude plugin marketplace update agent-core
+claude plugin update core@agent-core</code></pre>
+      <p>S&atilde;o dois comandos: atualizar o marketplace n&atilde;o atualiza o plugin. O <code>doctor.mjs</code> avisa quando a vers&atilde;o instalada difere da do reposit&oacute;rio.</p>
     </section>
 
     <!-- =============================================== VALIDACAO -->
