@@ -59,6 +59,14 @@ run(async (input) => {
     : input.tool_input?.command || "";
   if (!texto) pass();
 
+  // Leitura passa antes de qualquer outra coisa. O verbo vem do fim do nome da
+  // ferramenta — `mcp__plane_uaizy__list_work_items` -> `list_work_items` —
+  // para que o nome do SERVIDOR nunca decida se a acao e leitura.
+  if (ehMcp) {
+    const acao = tool.split("__").pop() || "";
+    if (bate(cfg.publish.mcpLeitura, acao)) pass();
+  }
+
   const ehPR = bate(cfg.publish.prPatterns, texto) || (ehMcp && bate(cfg.publish.mcpPrPatterns, texto));
   const ehTracker =
     bate(cfg.publish.sempreTracker, texto) ||

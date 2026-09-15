@@ -149,6 +149,44 @@ check("so documentacao -> passa", "stop-verify.mjs", { cwd: TMP, transcript_path
 check("stop_hook_active evita loop", "stop-verify.mjs", { cwd: TMP, transcript_path: editouSemTestar, stop_hook_active: true }, "pass");
 check("sem transcript passa", "stop-verify.mjs", { cwd: TMP }, "pass");
 
+console.log("\n=== regressao: LER nao e publicar (MCP) ===");
+// Reportado num projeto real: o portao barrava toda chamada mcp__plane_*,
+// inclusive list/count/retrieve. Os padroes casavam o nome do TRACKER, nao a
+// acao. Barrar consulta nao protege nada e torna o tracker inutil — o caminho
+// mais curto para o time desligar o nucleo inteiro.
+{
+  const mcpT = (nome, input = { id: "X" }) => ({
+    cwd: TMP, transcript_path: editouETestou, tool_name: nome, tool_input: input,
+  });
+
+  for (const n of [
+    "mcp__plane_uaizy__list_work_items",
+    "mcp__plane_uaizy__count_work_items",
+    "mcp__plane_uaizy__retrieve_work_item_by_identifier",
+    "mcp__plane__get_issue",
+    "mcp__plane__search_work_items",
+    "mcp__linear__list_issues",
+    "mcp__jira__describe_issue",
+    "mcp__plane__create_work_item_comment", // comentar registra contexto, nao publica
+  ]) {
+    check(n.split("__").pop(), "pre-publish-guard.mjs", mcpT(n), "pass");
+  }
+
+  for (const n of [
+    "mcp__plane_uaizy__update_work_item",
+    "mcp__plane_uaizy__create_work_item",
+    "mcp__plane_uaizy__delete_work_item",
+    "mcp__plane__transition_issue",
+  ]) {
+    check(n.split("__").pop() + " -> nega", "pre-publish-guard.mjs", mcpT(n), "deny");
+  }
+
+  // Um servidor com "list" no NOME nao pode liberar as escritas dele: o verbo
+  // e lido do fim do nome da ferramenta, nao do nome todo.
+  check("servidor chamado list-* nao libera escrita", "pre-publish-guard.mjs",
+    mcpT("mcp__list_manager_plane__update_work_item"), "deny");
+}
+
 console.log("\n=== regressao: o proprio tracker.mjs passa pelo portao ===");
 // Criar uma ferramenta que fura a propria guarda e o jeito mais facil de
 // destruir o sistema. O script fala com a API sem a URL aparecer no comando,

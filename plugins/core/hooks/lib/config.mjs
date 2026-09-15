@@ -113,6 +113,23 @@ export const DEFAULTS = {
       "mcp__[^ ]*(plane|linear|jira|asana|clickup)",
     ],
 
+    // Ler NAO e publicar.
+    //
+    // Os padroes acima casam o nome do TRACKER, nao a acao — entao
+    // `list_work_items` e `retrieve_work_item` eram barrados junto com
+    // `update_work_item`. O portao existe para impedir que trabalho saia sem
+    // autorizacao; barrar consulta nao protege nada e torna o tracker inutil,
+    // que e o caminho mais curto para o time desligar o nucleo inteiro.
+    //
+    // Casado contra o verbo no FIM do nome (`mcp__plane__list_work_items` ->
+    // `list_work_items`), nao contra o nome todo: um servidor chamado
+    // "list-manager" nao deve liberar suas escritas.
+    mcpLeitura: [
+      "^(list|get|retrieve|fetch|read|search|find|query|count|describe|show|view|export)([_-]|$)",
+      // Comentar tambem passa: registra contexto, nao muda o estado do trabalho.
+      "comment",
+    ],
+
     // Nome dos estados, so para a mensagem do bloqueio ficar na lingua do time.
     reviewState: "In Review",
     doneState: "Done",
