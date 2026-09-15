@@ -18,6 +18,22 @@ node $AGENT_CORE_ROOT/scripts/tracker.mjs --projeto . card <ID>
 
 ---
 
+## Retomando um trabalho interrompido
+
+Se o `SessionStart` entregou um checkpoint, a sessão anterior parou no meio.
+Antes de qualquer coisa, **confirme o que ele afirma** — ele é um retrato do que
+foi feito, não garantia de que continua valendo:
+
+- a branch ainda é aquela? (`git branch --show-current`)
+- as alterações não commitadas ainda estão lá? (`git status --short`)
+- o card ainda está no mesmo estado?
+
+Confirmado, retome **da fase onde parou**, não do começo. E se o checkpoint diz
+`SEM PROVA`, a primeira coisa a fazer é rodar o teste — o trabalho anterior
+nunca foi verificado.
+
+Se o usuário pedir outra coisa, **o pedido dele vence o checkpoint**.
+
 ## Fase 0 — Fixe o terreno
 
 **Leia o card inteiro** antes de rodar qualquer comando. Título, descrição,

@@ -41,6 +41,11 @@
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop-verify.mjs\"",
             "timeout": 150
+          },
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop-checkpoint.mjs\"",
+            "timeout": 45
           }
         ]
       }
