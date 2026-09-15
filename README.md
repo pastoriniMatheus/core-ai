@@ -362,6 +362,7 @@ por construção, não por disciplina.
 
 | | |
 |---|---|
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | **O que falta** — o que nunca foi exercitado, e o que foi adiado com motivo |
 | [`docs/MAQUINA-NOVA.md`](docs/MAQUINA-NOVA.md) | Máquina do zero: pré-requisitos até a primeira guarda funcionando |
 | [`docs/PROJETO-EM-ANDAMENTO.md`](docs/PROJETO-EM-ANDAMENTO.md) | Adotar num projeto que já existe, sem quebrar o fluxo do time |
 | [`docs/manual.html`](docs/manual.html) | O manual completo, para abrir no navegador ou compartilhar |
