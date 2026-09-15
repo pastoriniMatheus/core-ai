@@ -91,7 +91,7 @@ pior que nenhum: o agente lê o placeholder como se fosse instrução.
 ### 6. Confirme
 
 ```bash
-node {{CORE_ROOT}}/scripts/doctor.mjs "{{PROJECT}}"
+node $AGENT_CORE_ROOT/scripts/doctor.mjs "."
 ```
 
 ## Ao terminar

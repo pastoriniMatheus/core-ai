@@ -130,6 +130,25 @@ console.log("\n=== o plugin carrega os scripts que seus comandos chamam ===");
   const ausentes = citados.filter((f) => !existsSync(join(ROOT, "plugins", "core", "scripts", f)));
   afirma(`os ${citados.length} scripts citados pelos comandos viajam no plugin`, !ausentes.length,
     ausentes.length ? `faltam no plugin: ${ausentes.join(", ")}` : "");
+
+  // O regex acima so enxerga quem JA usa a variavel. Um comando que chame o
+  // script por outro caminho nao aparece como script ausente — nao aparece de
+  // jeito nenhum. Foi esse ponto cego que deixou {{CORE_ROOT}} sobreviver em
+  // tres comandos: o marcador so era resolvido pela copia do install, e a
+  // instalacao por plugin recebia o texto cru. As duas checagens abaixo olham
+  // o que sobra, em vez do que ja esta certo.
+  const arquivosCmd = readdirSync(join(ROOT, "plugins", "core", "commands")).filter((f) => f.endsWith(".md"));
+
+  const comMarcador = arquivosCmd.filter((f) => /\{\{[A-Z_]+\}\}/.test(ler(join("plugins", "core", "commands", f))));
+  afirma("nenhum comando carrega marcador nao resolvido", !comMarcador.length,
+    comMarcador.length ? `com {{...}}: ${comMarcador.join(", ")} — o plugin entrega o texto cru` : "");
+
+  const foraDaConvencao = [...new Set(
+    [...textoComandos.matchAll(/node\s+(\S*scripts\/[a-z-]+\.mjs)/g)]
+      .map((m) => m[1]).filter((p) => !p.startsWith("$AGENT_CORE_ROOT/"))
+  )];
+  afirma("todo script chamado por comando passa por $AGENT_CORE_ROOT", !foraDaConvencao.length,
+    foraDaConvencao.length ? `fora da convencao: ${foraDaConvencao.join(", ")}` : "");
 }
 
 console.log("\n=== versões coerentes ===");
