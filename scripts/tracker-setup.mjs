@@ -5,6 +5,7 @@
 //                       --url https://plane.exemplo.com --workspace evolution [--projeto-id X]
 //
 //   node scripts/tracker-setup.mjs --projeto <dir> --testar     # so testa o que ja existe
+//   node scripts/tracker-setup.mjs --projeto <dir> --detectar   # o projeto ja tem MCP de tracker?
 //
 // Para testar, o token e procurado em tres lugares, nesta ordem:
 //   1. .claude/settings.local.json   (o que o projeto declara)
@@ -30,6 +31,7 @@ const flag = (n, d = null) => {
 
 const PROJETO = flag("projeto", process.cwd());
 const SO_TESTAR = args.includes("--testar");
+const SO_DETECTAR = args.includes("--detectar");
 
 const readJson = (p) => { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return null; } };
 const claudeDir = join(PROJETO, ".claude");
@@ -96,7 +98,26 @@ async function lerStdin() {
  * Procura so no escopo DESTE projeto e no global. Varrer os demais projetos
  * acharia a credencial de um tracker vizinho e testaria a conexao errada,
  * devolvendo um OK que nao prova nada sobre o projeto em questao.
+ *
+ * ALIASES: o nome da variavel no MCP raramente e o que este script padroniza.
+ * O plane-mcp-server usa PLANE_API_KEY; nosso envPadrao e PLANE_API_TOKEN.
+ * Procurar so pelo nome exato acha nada num projeto que funciona.
  */
+const ALIASES = {
+  PLANE_API_TOKEN: ["PLANE_API_KEY", "PLANE_TOKEN"],
+  LINEAR_API_KEY: ["LINEAR_API_TOKEN", "LINEAR_KEY"],
+  JIRA_API_TOKEN: ["JIRA_TOKEN", "ATLASSIAN_API_TOKEN"],
+  GITHUB_TOKEN: ["GH_TOKEN", "GITHUB_API_TOKEN", "GITHUB_PERSONAL_ACCESS_TOKEN"],
+};
+
+/**
+ * As chaves de `projects` no ~/.claude.json sao gravadas com BARRA NORMAL, ate
+ * no Windows — mas `path.resolve` devolve contrabarra. Comparar os dois direto
+ * nunca casa, e a busca por escopo de projeto vira um no-op silencioso.
+ * Normalizar separador e caixa e o que faz a comparacao significar algo.
+ */
+const normalizar = (p) => p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+
 function tokenDoMcp(nomeVar, projeto) {
   const home = process.env.HOME || process.env.USERPROFILE;
   if (!home) return null;
@@ -108,13 +129,55 @@ function tokenDoMcp(nomeVar, projeto) {
   chaves.add(abs);
   try { chaves.add(realpathSync(abs)); } catch { /* caminho pode nao existir */ }
 
-  const escopos = [...chaves].map((k) => j.projects?.[k]).filter(Boolean);
+  // Comparacao normalizada: as chaves gravadas usam "/" e a caixa pode diferir.
+  const alvos = new Set([...chaves].map(normalizar));
+  const escopos = Object.entries(j.projects || {})
+    .filter(([k]) => alvos.has(normalizar(k)))
+    .map(([, v]) => v);
   escopos.push(j); // mcpServers global, fora de qualquer projeto
 
+  const nomes = [nomeVar, ...(ALIASES[nomeVar] || [])];
   for (const escopo of escopos) {
     for (const [nome, servidor] of Object.entries(escopo?.mcpServers || {})) {
-      const valor = servidor?.env?.[nomeVar];
-      if (valor) return { valor, origem: `env do servidor MCP "${nome}" em ~/.claude.json` };
+      for (const variavel of nomes) {
+        const valor = servidor?.env?.[variavel];
+        if (valor) {
+          return {
+            valor,
+            origem: `env do servidor MCP "${nome}" em ~/.claude.json` +
+              (variavel !== nomeVar ? ` (variavel ${variavel})` : ""),
+          };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * O projeto ja fala com um tracker por MCP?
+ *
+ * Perguntar credencial a quem ja configurou tudo e a forma mais rapida de o
+ * time concluir que a ferramenta nao entende o proprio ambiente. Ler antes de
+ * perguntar vale mais aqui do que em qualquer outro ponto do setup.
+ */
+function mcpDoProjeto(projeto) {
+  const home = process.env.HOME || process.env.USERPROFILE;
+  if (!home) return null;
+  const j = readJson(join(home, ".claude.json"));
+  if (!j) return null;
+
+  const abs = normalizar(resolve(projeto));
+  const escopo = Object.entries(j.projects || {}).find(([k]) => normalizar(k) === abs)?.[1];
+
+  for (const fonte of [escopo, j]) {
+    for (const [nome, servidor] of Object.entries(fonte?.mcpServers || {})) {
+      const env = servidor?.env || {};
+      const tracker = ["plane", "linear", "jira", "github"].find(
+        (t) => nome.toLowerCase().includes(t) ||
+               Object.keys(env).some((k) => k.toLowerCase().startsWith(t))
+      );
+      if (tracker) return { nome, tracker, env: Object.keys(env), valores: env };
     }
   }
   return null;
@@ -130,6 +193,15 @@ function testarConexao(url, headers, metodo = "GET", corpo = null) {
   if (r.error) return { ok: false, motivo: `curl nao pode ser executado (${r.error.code})` };
   const status = parseInt((r.stdout || "").trim(), 10);
   return { ok: status >= 200 && status < 300, status };
+}
+
+// --------------------------------------------------------------- detectar
+// Leitura pura: diz o que o projeto JA tem, para o comando nao perguntar o que
+// ja esta configurado.
+if (SO_DETECTAR) {
+  const m = mcpDoProjeto(PROJETO);
+  console.log(JSON.stringify(m ? { mcp: m.nome, tracker: m.tracker, env: m.env } : null, null, 2));
+  process.exit(0);
 }
 
 // ---------------------------------------------------------------- so testar
