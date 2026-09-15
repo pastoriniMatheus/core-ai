@@ -37,7 +37,7 @@ run(async (input) => {
       encoding: "utf8",
       timeout: cfg.stopVerify.projectCheckTimeoutMs,
       windowsHide: true,
-    });
+    }, { aoFalhar: "bloqueia" });
     if (r.status === 0) continue; // passou
 
     // Timeout nao e aprovacao. "Nao terminei de verificar" nunca deve ser
@@ -71,4 +71,4 @@ run(async (input) => {
       `Rode a suite (ou o subconjunto relevante) e mostre a saida. Se nao houver teste ` +
       `que cubra essa mudanca, diga isso explicitamente ao usuario em vez de declarar pronto.`
   );
-});
+}, { aoFalhar: "bloqueia" });

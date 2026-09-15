@@ -21,8 +21,17 @@ import { join } from "node:path";
 import { run, pass, denyTool } from "./lib/io.mjs";
 import { loadConfig } from "./lib/config.mjs";
 import { estadoDaProva } from "./lib/transcript.mjs";
+import { dirEstado } from "./lib/estado.mjs";
 
-const bate = (padroes, texto) => padroes.some((p) => new RegExp(p, "i").test(texto));
+// Um padrao malformado na configuracao nao pode derrubar a checagem inteira.
+// Sem o try, `padroes.some` lancava no primeiro invalido e io.mjs engolia —
+// o portao morria em silencio, e de forma DEPENDENTE DA ORDEM: com o padrao
+// bom antes, passava nos testes; com ele depois, a guarda sumia em producao.
+const bate = (padroes, texto) =>
+  (padroes || []).some((p) => {
+    try { return new RegExp(p, "i").test(texto); }
+    catch { return false; } // padrao invalido: ignora este, segue nos outros
+  });
 
 /**
  * Autorizacao one-shot para chamadas MCP.
@@ -59,13 +68,18 @@ run(async (input) => {
     : input.tool_input?.command || "";
   if (!texto) pass();
 
-  // Leitura passa antes de qualquer outra coisa. O verbo vem do fim do nome da
-  // ferramenta — `mcp__plane_uaizy__list_work_items` -> `list_work_items` —
-  // para que o nome do SERVIDOR nunca decida se a acao e leitura.
-  if (ehMcp) {
-    const acao = tool.split("__").pop() || "";
-    if (bate(cfg.publish.mcpLeitura, acao)) pass();
-  }
+  // A acao vem do fim do nome da ferramenta — `mcp__plane__list_work_items` ->
+  // `list_work_items` — para que o nome do SERVIDOR nunca decida se e leitura.
+  //
+  // Uma acao so e leitura quando NAO contem verbo de escrita nenhum. Casar so o
+  // prefixo deixava `get_or_update_work_item` passar como leitura, e com isso
+  // ele atravessava o portao inteiro, inclusive o bloqueio de estado final.
+  const acao = ehMcp ? (tool.split("__").pop() || "") : "";
+  const leitura = bate(cfg.publish.mcpLeitura, acao) && !bate(cfg.publish.mcpEscrita, acao);
+  // Comentar passa mesmo com "create" no nome — desde que nao toque no estado.
+  const comentario =
+    bate(cfg.publish.mcpComentario, acao) && !bate(cfg.publish.mcpMexeNoEstado, acao);
+  const soLeitura = ehMcp && (leitura || comentario);
 
   const ehPR = bate(cfg.publish.prPatterns, texto) || (ehMcp && bate(cfg.publish.mcpPrPatterns, texto));
   const ehTracker =
@@ -90,6 +104,10 @@ run(async (input) => {
         `"${cfg.publish.reviewState}" com o link da PR no comentario, e para por ai.`
     );
   }
+
+  // A isencao de leitura vem DEPOIS do bloqueio de estado final, de proposito:
+  // aquele bloqueio nao tem escape, e "e leitura" nao pode virar um.
+  if (soLeitura) pass();
 
   if (!ehPR && !ehTracker) pass();
 
@@ -141,7 +159,11 @@ run(async (input) => {
   if (ehMcp) {
     linhas.push("  Com a autorizacao em maos, libere UMA publicacao e repita a chamada:");
     linhas.push("");
-    linhas.push("    node \"$AGENT_CORE_ROOT/scripts/autorizar.mjs\"");
+    // A pasta e criada AQUI, ja protegida: assim a mensagem volta a ser um
+    // comando que funciona em qualquer instalacao. Apontar para um script em
+    // scripts/ quebrava na instalacao por plugin, que nao carrega essa pasta.
+    try { dirEstado(input.cwd); } catch { /* sem permissao: o comando abaixo avisa */ }
+    linhas.push("    touch .claude/core-state/publish-ok");
     linhas.push("");
     linhas.push("  O token vale uma vez so e vence em poucos minutos.");
   } else {
@@ -149,4 +171,4 @@ run(async (input) => {
   }
 
   denyTool(linhas.join("\n"));
-});
+}, { aoFalhar: "bloqueia" });

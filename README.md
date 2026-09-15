@@ -267,7 +267,6 @@ Os scripts do repositório, e o que cada um faz:
 | `tracker.mjs` | busca card, comenta, move estado (por trás de `atacar-card`) |
 | `ferramentas.mjs` | instala Ponytail, Graphify, notebooklm (por trás do `/core-ferramentas`) |
 | `baseline.mjs` | mede tokens, turnos e tempo das sessões |
-| `autorizar.mjs` | libera UMA publicação por MCP (o portão diz quando usar) |
 | `gerar-referencia.mjs` | gera `docs/CONFIGURACAO.md` a partir do código |
 | `aceitacao.mjs` | teste ponta a ponta com sessões reais do Claude Code |
 

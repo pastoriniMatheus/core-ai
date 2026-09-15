@@ -139,9 +139,16 @@ function binExiste(cmd) {
     process.platform === "win32"
       ? spawnSync("where", [cmd], { encoding: "utf8", timeout: 5000, windowsHide: true })
       : spawnSync("sh", ["-c", `command -v ${cmd}`], { encoding: "utf8", timeout: 5000 });
-  const existe = r.status === 0 && Boolean((r.stdout || "").trim());
-  cacheBin.set(cmd, existe);
-  return existe;
+
+  // `where` pode devolver varios caminhos; o primeiro e o que seria executado.
+  // Guardar o caminho RESOLVIDO permite rodar sem shell — e rodar sem shell e o
+  // que faz um arquivo sob "C:\meu projeto\" ser verificado em vez de virar
+  // dois argumentos. Com shell:true o Node junta argv sem aspas, e o linter
+  // recebia "C:\meu" como alvo: reprovava com um erro que ninguem consegue
+  // corrigir, bloqueando toda edicao de quem tem espaco no caminho.
+  const caminho = r.status === 0 ? (r.stdout || "").split(/\r?\n/)[0].trim() : "";
+  cacheBin.set(cmd, caminho || false);
+  return caminho || false;
 }
 
 /**
@@ -150,13 +157,17 @@ function binExiste(cmd) {
  */
 export function runFirstAvailable(candidates, cwd, timeoutMs) {
   for (const [cmd, args] of candidates) {
-    if (!binExiste(cmd)) continue; // nao instalado: tenta o proximo
+    const caminho = binExiste(cmd);
+    if (!caminho) continue; // nao instalado: tenta o proximo
 
-    const r = spawnSync(cmd, args, {
+    // SEM shell, e com o caminho resolvido: o Node passa cada argumento
+    // separado, e um arquivo em "C:\meu projeto\" chega inteiro ao linter.
+    // O caminho completo tambem resolve o .cmd/.bat do npm no Windows, que era
+    // o motivo original do shell.
+    const r = spawnSync(caminho, args, {
       cwd,
       timeout: timeoutMs,
       encoding: "utf8",
-      shell: process.platform === "win32", // .cmd/.bat (npx, bundle) exigem shell no Windows
       windowsHide: true,
     });
 
