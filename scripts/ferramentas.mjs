@@ -92,8 +92,26 @@ if (SO_GRAFO) {
   console.log(`\n  Construindo o grafo de ${PROJETO}...\n`);
   // --code-only: parsing local por tree-sitter, sem mandar nada para LLM nenhum.
   // Em projeto com contrato de cliente, é a diferença entre local e vazamento.
-  const ok = rodar(`graphify "${PROJETO}" --code-only`);
-  process.exit(ok ? 0 : 1);
+  const t0 = Date.now();
+  if (!rodar(`graphify "${PROJETO}" --code-only`)) process.exit(1);
+
+  // O extract sozinho para no meio: sem este passo não há GRAPH_REPORT.md nem
+  // graph.html, e as comunidades ficam sem nome — a consulta então responde
+  // qualquer coisa. Medido neste repositório: perguntar pelo portão de
+  // publicação devolvia o arquivo de testes de aceitação. O grafo existia e não
+  // servia, que é pior do que não existir, porque parece pronto.
+  console.log(`\n  Nomeando comunidades e gerando o relatorio...\n`);
+  if (!rodar(`graphify cluster-only "${PROJETO}"`)) process.exit(1);
+
+  const seg = Math.round((Date.now() - t0) / 1000);
+  console.log(`\n  ${c.ok}Grafo pronto em ${seg}s.${c.off}`);
+  console.log(`  ${c.dim}graphify-out/  GRAPH_REPORT.md, graph.html, graph.json${c.off}`);
+  if (seg > 90) {
+    console.log(`\n  ${c.warn}${seg}s e lento para rodar a cada commit.${c.off}`);
+    console.log(`  ${c.dim}E o numero que decide se o modo servidor MCP compensa.${c.off}`);
+  }
+  console.log("");
+  process.exit(0);
 }
 
 // ------------------------------------------------------------- diagnóstico
