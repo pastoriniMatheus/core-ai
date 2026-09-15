@@ -9,8 +9,22 @@ Se `$ARGUMENTS` contiver `--testar`, pule direto para o passo 4.
 
 ## 1. Descubra antes de perguntar
 
-Perguntar o que já está escrito no repositório desperdiça o tempo do usuário.
-Olhe primeiro:
+**Primeiro de tudo**, veja se o projeto já fala com um tracker por MCP:
+
+```bash
+node $AGENT_CORE_ROOT/scripts/tracker-setup.mjs --projeto "." --detectar
+```
+
+Se devolver um servidor, o acesso **já existe** — URL, workspace e token estão no
+env dele. Nesse caso não peça credencial nenhuma: diga o que encontrou e pergunte
+apenas se o usuário quer que o portão de publicação reconheça esse tracker. Para
+isso basta escrever `publish.trackerPatterns` e `publish.tracker` no `core.json`,
+sem tocar em token.
+
+Perguntar credencial a quem já configurou tudo é a forma mais rápida de o time
+concluir que a ferramenta não entende o próprio ambiente.
+
+Se devolver `null`, siga. Olhe também:
 
 - `.claude/core.json` — já existe `publish.tracker`? Então é reconfiguração
 - `CLAUDE.md`, `README.md` — costumam citar a URL do tracker
