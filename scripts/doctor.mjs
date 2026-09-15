@@ -117,8 +117,18 @@ if (!existsSync(settingsPath)) {
     .map(([evento]) => evento);
 
   if (pluginInstalado) {
-    OK(`plugin instalado (escopo ${pluginInstalado.escopo})`,
-       `v${pluginInstalado.versao} — entrega hooks, skills e comandos sem tocar no settings.json do projeto`);
+    // `claude plugin update` compara SÓ a versão declarada. Se o repositório
+    // ganhou skills sem que a versão subisse, o comando responde "já está na
+    // última" e o time fica com o cache antigo — sem erro visível, porque a
+    // mensagem de sucesso é idêntica à de quando não há o que atualizar.
+    const doRepo = readJson(join(ROOT, "plugins", "core", ".claude-plugin", "plugin.json"))?.version;
+    if (doRepo && doRepo !== pluginInstalado.versao) {
+      WARN(`plugin instalado está em v${pluginInstalado.versao}, o repositório em v${doRepo}`,
+           "rode: claude plugin marketplace update agent-core && claude plugin update core@agent-core");
+    } else {
+      OK(`plugin instalado (escopo ${pluginInstalado.escopo})`,
+         `v${pluginInstalado.versao} — entrega hooks, skills e comandos sem tocar no settings.json do projeto`);
+    }
   } else if (eventos.length >= 4) {
     OK(`hooks do core ligados (${settingsLocal?.hooks ? "settings.local.json" : "settings.json"})`, eventos.join(", "));
     if (settingsLocal?.env?.AGENT_CORE_ROOT) OK("AGENT_CORE_ROOT definido", settingsLocal.env.AGENT_CORE_ROOT);

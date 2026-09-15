@@ -113,7 +113,7 @@ não ligou — rode `claude plugin details core@agent-core`.
 |---|---|
 | Ver o que está instalado | `claude plugin list` |
 | Inventário e custo em tokens | `claude plugin details core@agent-core` |
-| Atualizar para a versão nova | `claude plugin marketplace update agent-core` |
+| Atualizar para a versão nova | `claude plugin marketplace update agent-core`<br>`claude plugin update core@agent-core` |
 | Desligar temporariamente | `claude plugin disable core@agent-core` |
 | Remover | `claude plugin uninstall core@agent-core` |
 
@@ -263,6 +263,22 @@ node scripts/doctor.mjs    /caminho/do/projeto   # confirma
 O instalador é **aditivo**: mescla `permissions.allow`, preserva hooks de outras
 ferramentas, não sobrescreve uma skill sua de mesmo nome, e rodar duas vezes não
 duplica nada.
+
+## Ao mudar o núcleo: **incremente a versão**
+
+`claude plugin update` compara **só a versão declarada**. Um repositório com
+skills novas e a mesma versão faz o comando responder *"já está na última"* — e
+o time fica com o cache antigo, sem erro visível, porque a mensagem de sucesso é
+idêntica à de quando não há o que atualizar.
+
+Ao alterar skills, comandos ou hooks, suba a versão nos **dois** arquivos:
+
+```
+plugins/core/.claude-plugin/plugin.json
+.claude-plugin/marketplace.json
+```
+
+O `doctor.mjs` avisa quando a versão instalada difere da do repositório.
 
 ## Medir
 
