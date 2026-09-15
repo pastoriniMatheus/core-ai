@@ -85,6 +85,29 @@ const manualSemCmd = comandos.filter((c) => !MANUAL.includes(`/${c}`));
 afirma("os comandos aparecem no manual", !manualSemCmd.length,
   manualSemCmd.length ? `faltam no manual: ${manualSemCmd.join(", ")}` : "");
 
+console.log("\n=== a referência de configuração acompanha o código ===");
+// Uma opção nova sem linha na referência é uma opção que só quem lê o código
+// descobre. A referência é GERADA de lib/config.mjs — este teste garante que
+// ela foi regenerada depois da última mudança.
+{
+  const REF = ler("docs/CONFIGURACAO.md");
+  const cfg = ler("plugins/core/hooks/lib/config.mjs");
+
+  const secoes = [...cfg.matchAll(/^ {2}([a-zA-Z]+): \{$/gm)].map((m) => m[1]);
+  const opcoes = [...new Set([...cfg.matchAll(/^ {4}([a-zA-Z]+):/gm)].map((m) => m[1]))];
+
+  const semSecao = secoes.filter((x) => !REF.includes("## `" + x + "`"));
+  afirma(`as ${secoes.length} seções estão na referência`, !semSecao.length, semSecao.join(", "));
+
+  const semOpcao = opcoes.filter((x) => !REF.includes("| `" + x + "` |"));
+  afirma(`as ${opcoes.length} opções estão na referência`, !semOpcao.length,
+    semOpcao.length ? `faltam: ${semOpcao.join(", ")} — rode: node scripts/gerar-referencia.mjs` : "");
+
+  const semDescricao = (REF.match(/\| — \|/g) || []).length;
+  afirma("nenhuma opção sem descrição", semDescricao === 0,
+    semDescricao ? `${semDescricao} sem texto — acrescente o comentário em lib/config.mjs` : "");
+}
+
 console.log("\n=== versões coerentes ===");
 
 // A versão é o único sinal que `claude plugin update` usa. Se os dois arquivos
