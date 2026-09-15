@@ -24,9 +24,23 @@ const linhas = readFileSync(FONTE, "utf8").split("\n");
  * Os comentários do config.mjs explicam POR QUE cada default é o que é — e
  * essa é exatamente a informação que falta a quem vai mudar o valor.
  */
-function comentarioDe(chave, nivel) {
+function comentarioDe(chave, nivel, dentroDe = null) {
   const alvo = new RegExp(`^\\s{${nivel}}${chave}:`);
-  const i = linhas.findIndex((l) => alvo.test(l));
+
+  // A busca precisa acontecer DENTRO da seção: `enabled` existe em seis delas,
+  // e procurar no arquivo inteiro fazia as seis linhas da referência herdarem a
+  // descrição da primeira — cinco descrições erradas num documento cujo
+  // propósito declarado é justamente não envelhecer em silêncio.
+  let de = 0;
+  let ate = linhas.length;
+  if (dentroDe) {
+    de = linhas.findIndex((l) => l.startsWith(`  ${dentroDe}: {`));
+    if (de === -1) return "";
+    const fim = linhas.findIndex((l, k) => k > de && (l === "  }," || l === "  }"));
+    ate = fim === -1 ? linhas.length : fim;
+  }
+
+  const i = linhas.findIndex((l, k) => k >= de && k < ate && alvo.test(l));
   if (i === -1) return "";
 
   // Comentario na propria linha: `byExtension: null, // null = autodeteccao`
@@ -84,7 +98,7 @@ for (const [secao, opcoes] of Object.entries(DEFAULTS)) {
   out.push("|---|---|---|");
   for (const [chave, v] of Object.entries(opcoes)) {
     if (chave.startsWith("//")) continue;
-    const desc = comentarioDe(chave, 4) || "—";
+    const desc = comentarioDe(chave, 4, secao) || "—";
     out.push(`| \`${chave}\` | ${valor(v) || "objeto"} | ${desc} |`);
   }
   out.push("");

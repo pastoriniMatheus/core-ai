@@ -583,6 +583,110 @@ console.log("\n=== o estado local nao pode vazar para o repositorio ===");
   else { failed++; console.log(`  FAIL  vazou para o git: ${vazou.join(", ")}`); }
 }
 
+console.log("\n=== review: o portao nao pode falhar aberto ===");
+{
+  const dirR = join(TMP, "review");
+  mkdirSync(join(dirR, ".claude"), { recursive: true });
+  const mcp = (n, inp) => ({ cwd: dirR, tool_name: n, tool_input: inp });
+
+  // Verbo composto nao vira leitura por comecar com "get": casar so o prefixo
+  // deixava `get_or_update_work_item` atravessar o portao INTEIRO, inclusive o
+  // bloqueio de estado final que o projeto chama de inviolavel.
+  for (const a of ["get_or_update_work_item", "search_and_update_issue",
+                   "find_and_close_issue", "update_issue_comment_and_state"]) {
+    check(`${a} com Done -> nega`, "pre-publish-guard.mjs", mcp("mcp__plane__" + a, { state: "Done" }), "deny");
+  }
+  for (const a of ["list_work_items", "get_issue", "count_work_items", "create_work_item_comment"]) {
+    check(`${a} -> passa`, "pre-publish-guard.mjs", mcp("mcp__plane__" + a, { id: "X" }), "pass");
+  }
+
+  // Um padrao invalido na configuracao nao pode matar a checagem — e o efeito
+  // era DEPENDENTE DA ORDEM, entao passava no teste e sumia em producao.
+  for (const ordem of [["gh +pr +create", "foo(bar"], ["foo(bar", "gh +pr +create"]]) {
+    writeFileSync(join(dirR, ".claude", "core.json"), JSON.stringify({ publish: { prPatterns: ordem } }));
+    check(`regex invalida em ${ordem[0] === "foo(bar" ? "1o" : "2o"} lugar nao derruba o portao`,
+      "pre-publish-guard.mjs", { cwd: dirR, tool_input: { command: "gh pr create" } }, "deny");
+  }
+  rmSync(join(dirR, ".claude", "core.json"), { force: true });
+
+  // Evento sem cwd: join(undefined) lancava, io.mjs engolia, e a guarda virava
+  // exit 0 — falha aberta no meio do portao.
+  check("evento sem cwd nao passa em silencio", "pre-publish-guard.mjs",
+    { tool_name: "mcp__plane__update_work_item", tool_input: { state: "In Review" } }, "deny");
+}
+
+console.log("\n=== review: falsos positivos que travam o trabalho ===");
+{
+  // Com shell:true o Node junta argv sem aspas: um arquivo sob "meu projeto"
+  // virava dois argumentos, o linter nunca rodava, e a edicao era bloqueada com
+  // um erro impossivel de corrigir. Todo usuario com espaco no caminho, travado.
+  const comEspaco = join(TMP, "meu projeto");
+  mkdirSync(comEspaco, { recursive: true });
+  const bom = join(comEspaco, "ok.js");
+  const ruim = join(comEspaco, "ruim.js");
+  writeFileSync(bom, "const x = 1;\nconsole.log(x);\n");
+  writeFileSync(ruim, "const x = 1;\nconsole.log(x\n");
+  check("arquivo valido sob caminho com espaco passa", "post-edit-verify.mjs",
+    { cwd: comEspaco, tool_input: { file_path: bom } }, "pass");
+  check("arquivo quebrado sob caminho com espaco bloqueia", "post-edit-verify.mjs",
+    { cwd: comEspaco, tool_input: { file_path: ruim } }, "block");
+
+  // Manifesto k8s/Helm com "---" e VALIDO. safe_load recusava o segundo
+  // documento e bloqueava um arquivo correto — sem nada para corrigir.
+  const multi = join(TMP, "multi.yaml");
+  writeFileSync(multi, "---\napiVersion: v1\nkind: Service\n---\napiVersion: v1\nkind: Pod\n");
+  const yRuim = join(TMP, "ruim.yaml");
+  writeFileSync(yRuim, "---\nchave: [a, b\n");
+  if (decide("post-edit-verify.mjs", { cwd: TMP, tool_input: { file_path: yRuim } }) === "block") {
+    check("YAML multi-documento valido passa", "post-edit-verify.mjs",
+      { cwd: TMP, tool_input: { file_path: multi } }, "pass");
+  } else {
+    console.log("  SKIP  sem validador de YAML nesta maquina");
+  }
+}
+
+console.log("\n=== review: o checkpoint ===");
+{
+  const dirC = join(TMP, "cp-review");
+  mkdirSync(dirC, { recursive: true });
+  const g = (a) => spawnSync("git", a, { cwd: dirC, encoding: "utf8", timeout: 10000 });
+  g(["init", "-q"]); g(["config", "user.email", "t@t"]); g(["config", "user.name", "T"]);
+  const cod = join(dirC, "c.ts");
+  writeFileSync(cod, "export const x = 1;\n");
+
+  const base = [
+    { message: { role: "user", content: [{ type: "text", text: "ataque ZZ-9" }] } },
+    { message: { role: "assistant", content: [{ type: "tool_use", name: "Edit", input: { file_path: cod } }] } },
+  ];
+  const semProva = join(dirC, "a.jsonl");
+  const comProva = join(dirC, "b.jsonl");
+  writeFileSync(semProva, base.map((e) => JSON.stringify(e)).join("\n") + "\n");
+  writeFileSync(comProva, [...base,
+    { message: { role: "assistant", content: [{ type: "tool_use", name: "Bash", input: { command: "npx vitest run" } }] } },
+  ].map((e) => JSON.stringify(e)).join("\n") + "\n");
+
+  const rodaCp = (e) => spawnSync(process.execPath, [join(HOOKS, "stop-checkpoint.mjs")],
+    { input: JSON.stringify(e), encoding: "utf8", timeout: 30000 });
+  const leCp = () => { try { return readFileSync(join(dirC, ".claude", "core-state", "checkpoint.md"), "utf8"); } catch { return ""; } };
+  const afirmaR = (n, c) => { if (c) { passed++; console.log(`  PASS  ${n}`); } else { failed++; console.log(`  FAIL  ${n}`); } };
+
+  // A reentrada do Stop congelava o checkpoint no primeiro retrato: dizia SEM
+  // PROVA depois de a prova existir, e mentia exatamente nas sessoes em que
+  // retomar importa mais.
+  rodaCp({ cwd: dirC, transcript_path: semProva });
+  afirmaR("1o Stop registra a falta de prova", leCp().includes("SEM PROVA"));
+  rodaCp({ cwd: dirC, transcript_path: comProva, stop_hook_active: true });
+  afirmaR("reentrada do Stop atualiza o checkpoint", !leCp().includes("SEM PROVA"));
+
+  // Regra de ignore NAO desrastreia: quem commitou o checkpoint numa versao
+  // anterior continua vazando, e escrever mais conteudo la piora.
+  g(["add", "-f", ".claude/core-state/checkpoint.md"]);
+  g(["commit", "-qm", "legado"]);
+  rodaCp({ cwd: dirC, transcript_path: semProva });
+  afirmaR("arquivo ja versionado nao recebe conteudo novo",
+    leCp().includes("CHECKPOINT DESLIGADO") && !leCp().includes("Pedido original"));
+}
+
 console.log("\n=== aviso de projeto nao configurado ===");
 function avisa(cwd) {
   const r = spawnSync(process.execPath, [join(HOOKS, "session-start.mjs")], {

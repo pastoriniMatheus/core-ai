@@ -21,15 +21,11 @@ import { fileURLToPath } from "node:url";
 import { run, pass } from "./lib/io.mjs";
 import { loadConfig } from "./lib/config.mjs";
 import { montar, emTexto } from "./lib/checkpoint.mjs";
-import { dirEstado } from "./lib/estado.mjs";
+import { dirEstado, rastreadoPeloGit } from "./lib/estado.mjs";
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 
 run(async (input) => {
-  // O stop-verify pode bloquear e o Stop reentra. Regravar o checkpoint a
-  // cada tentativa nao quebra nada, mas gasta o tempo do usuario a toa.
-  if (input.stop_hook_active) pass();
-
   const cfg = loadConfig(input.cwd);
   if (!cfg.checkpoint?.enabled) pass();
 
@@ -44,14 +40,47 @@ run(async (input) => {
   // usuario, que pode conter segredo, e nao pode depender do .gitignore do
   // projeto estar certo.
   const dir = dirEstado(input.cwd);
+  const md = join(dir, "checkpoint.md");
+
+  // Regra de ignore NAO desrastreia nada. Num repositorio que commitou o
+  // checkpoint numa versao anterior, escrever o conteudo novo acrescentaria
+  // mais segredo ao que ja vazou — entao aqui ele nao e escrito, e o arquivo
+  // passa a dizer o que precisa ser feito.
+  if (rastreadoPeloGit(".claude/core-state/checkpoint.md", input.cwd)) {
+    writeFileSync(md, [
+      "CHECKPOINT DESLIGADO — este arquivo esta versionado no git.",
+      "",
+      "Ele guarda o pedido do usuario, que pode conter credencial. Enquanto",
+      "estiver rastreado, o nucleo nao escreve nada aqui: seria acrescentar",
+      "segredo a um arquivo que vai para o repositorio.",
+      "",
+      "Para religar, desrastreie a pasta (o conteudo local continua no disco):",
+      "",
+      "    git rm -r --cached .claude/core-state",
+      '    git commit -m "remove estado local do versionamento"',
+      "",
+      "E confira se algum commit antigo ja carrega credencial: o historico",
+      "guarda o que foi commitado mesmo depois de o arquivo sair.",
+    ].join("\n") + "\n");
+    pass();
+  }
+
   writeFileSync(join(dir, "checkpoint.json"), JSON.stringify(c, null, 2) + "\n");
-  writeFileSync(join(dir, "checkpoint.md"), emTexto(c) + "\n");
+  writeFileSync(md, emTexto(c) + "\n");
 
   // ------------------------------------------------- comentário no card
   // Só com opt-in explícito, e só quando ficou trabalho em aberto: registrar no
   // tracker que uma tarefa terminou e foi entregue é redundante com a própria
   // entrega.
+  // O checkpoint E regravado na reentrada, de proposito: o stop-verify bloqueia,
+  // o agente roda o teste, e o Stop volta. Congelar no primeiro retrato deixava
+  // o checkpoint dizendo SEM PROVA depois de a prova existir — e mentindo
+  // justamente nas sessoes em que retomar importa mais.
+  //
+  // O que a reentrada evita e a chamada de rede: um comentario por tentativa de
+  // encerrar polui o card.
   const deveComentar =
+    !input.stop_hook_active &&
     cfg.checkpoint.comentarNoCard && c.card && (!c.testouDepois || c.naoCommitado > 0);
 
   if (deveComentar) {

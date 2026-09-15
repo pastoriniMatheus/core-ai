@@ -164,11 +164,27 @@ export const DEFAULTS = {
     // Casado contra o verbo no FIM do nome (`mcp__plane__list_work_items` ->
     // `list_work_items`), nao contra o nome todo: um servidor chamado
     // "list-manager" nao deve liberar suas escritas.
+    // A isencao so vale para acao que NAO contenha nenhum verbo de escrita.
+    // Casar so o prefixo deixava `get_or_update_work_item` e
+    // `search_and_update_issue` passarem pelo portao INTEIRO — inclusive pelo
+    // bloqueio de estado final, que o projeto chama de inviolavel. Um nome
+    // composto nao vira leitura por comecar com "get".
+    mcpEscrita: [
+      "(^|[_-])(update|create|delete|remove|add|set|patch|put|post|move|transition|assign|close|reopen|archive|link|upload|import|sync|edit|modify|change|write|apply|submit|approve|merge)([_-]|$)",
+    ],
+    // Verbos que comecam uma acao de leitura. So isentam quando a acao inteira
+    // tambem nao casa `mcpEscrita`.
     mcpLeitura: [
       "^(list|get|retrieve|fetch|read|search|find|query|count|describe|show|view|export)([_-]|$)",
-      // Comentar tambem passa: registra contexto, nao muda o estado do trabalho.
-      "comment",
     ],
+
+    // Comentar registra contexto, nao muda o estado do trabalho — e por isso
+    // passa mesmo tendo "create" no nome. Mas so quando for SO comentar:
+    // `update_issue_comment_and_state` mexe no estado e nao entra aqui.
+    // Acoes de comentario, que passam mesmo tendo "create" no nome.
+    mcpComentario: ["(^|[_-])comments?([_-]|$)"],
+    // O que desqualifica uma acao de comentario: se mexe no estado, nao passa.
+    mcpMexeNoEstado: ["(^|[_-])(state|status|transition|close|reopen|move|assign|archive)([_-]|$)"],
 
     // Nome dos estados, so para a mensagem do bloqueio ficar na lingua do time.
     reviewState: "In Review",

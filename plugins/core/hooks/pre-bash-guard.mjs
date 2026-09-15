@@ -30,12 +30,12 @@ function graphStale(cwd, limit) {
   if (!existsSync(graph)) return null;
   const r = spawnSync("git", ["log", "-1", "--format=%cI"], {
     cwd, encoding: "utf8", timeout: 3000, windowsHide: true,
-  });
+  }, { aoFalhar: "bloqueia" });
   if (r.status !== 0 || !r.stdout?.trim()) return null;
 
   const count = spawnSync("git", ["rev-list", "--count", `--since=${statSync(graph).mtime.toISOString()}`, "HEAD"], {
     cwd, encoding: "utf8", timeout: 3000, windowsHide: true,
-  });
+  }, { aoFalhar: "bloqueia" });
   const behind = parseInt(count.stdout?.trim() || "0", 10);
   return behind >= limit ? behind : null;
 }
@@ -70,4 +70,4 @@ run(async (input) => {
       );
     }
   }
-});
+}, { aoFalhar: "bloqueia" });

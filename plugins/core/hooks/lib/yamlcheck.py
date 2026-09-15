@@ -15,7 +15,12 @@ except ImportError:
 
 try:
     with open(sys.argv[1], encoding="utf-8") as fh:
-        yaml.safe_load(fh)
+        # safe_load_all: um manifesto k8s ou Helm com "---" e VALIDO e tem
+        # varios documentos. safe_load recusa o segundo e o hook bloqueava um
+        # arquivo correto — sem nada para corrigir, a unica saida era desligar
+        # a verificacao inteira.
+        for _ in yaml.safe_load_all(fh):
+            pass
 except Exception as err:  # noqa: BLE001 - qualquer falha de parse conta
     sys.stderr.write(str(err) + "\n")
     sys.exit(1)

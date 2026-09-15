@@ -15,6 +15,7 @@
 // e continua valendo no clone de qualquer pessoa.
 
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 
 const AVISO = `# Estado local do agent-core: conteudo de sessao, nunca versionado.
@@ -32,4 +33,23 @@ export function dirEstado(cwd) {
   if (!existsSync(gi)) writeFileSync(gi, AVISO);
 
   return dir;
+}
+
+/**
+ * O arquivo já está versionado?
+ *
+ * Regra de ignore **não desrastreia nada**. Quem rodou uma versão anterior e
+ * commitou o checkpoint continua com o segredo no repositório, e o `.gitignore`
+ * novo não muda isso — a proteção parece feita e não está.
+ *
+ * Saber disso é o que permite não escrever conteúdo novo lá dentro.
+ */
+export function rastreadoPeloGit(arquivo, cwd) {
+  const r = spawnSync("git", ["ls-files", "--error-unmatch", arquivo], {
+    cwd: cwd || ".",
+    encoding: "utf8",
+    timeout: 5000,
+    windowsHide: true,
+  });
+  return r.status === 0;
 }

@@ -66,4 +66,4 @@ run(async (input) => {
 
   const erro = verificar(file, input.cwd, cfg);
   if (erro) block(`[core] ${erro}\n\nCorrija agora, antes de seguir para o proximo passo.`);
-});
+}, { aoFalhar: "bloqueia" });
