@@ -10,7 +10,9 @@
 // Este hook faz a primeira sessao do projeto avisar.
 
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { writeFileSync, mkdirSync } from "node:fs";
 import { readInput } from "./lib/io.mjs";
 import { loadConfig } from "./lib/config.mjs";
 
@@ -30,8 +32,30 @@ function checkpointRecente(cwd, cfg) {
   try { return readFileSync(p, "utf8").trim(); } catch { return null; }
 }
 
+/**
+ * Publica onde o nucleo esta, para os comandos acharem os scripts.
+ *
+ * Um comando e markdown: ele nao expande ${CLAUDE_PLUGIN_ROOT}. Mas ESTE hook e
+ * invocado com esse caminho, entao ele sabe onde mora — e pode gravar o valor
+ * onde o comando consegue ler. Sem isso, /core-tracker e /core-ferramentas
+ * apontavam para um caminho que so existia na instalacao local, e quebravam
+ * justamente na instalacao por plugin, que e o caminho principal.
+ */
+function publicaRaiz(cwd) {
+  // hooks/session-start.mjs -> o nucleo e o diretorio acima de hooks/
+  const nucleo = dirname(dirname(fileURLToPath(import.meta.url))).split("\\").join("/");
+  const p = join(cwd, ".claude", "settings.local.json");
+  let j = {};
+  try { j = JSON.parse(readFileSync(p, "utf8")); } catch { /* arquivo novo */ }
+  if (j.env?.AGENT_CORE_ROOT === nucleo) return; // ja em dia: nao reescreve
+  j.env = { ...(j.env || {}), AGENT_CORE_ROOT: nucleo };
+  mkdirSync(join(cwd, ".claude"), { recursive: true });
+  writeFileSync(p, JSON.stringify(j, null, 2) + "\n");
+}
+
 function main(input) {
   const cwd = input.cwd || process.cwd();
+  try { publicaRaiz(cwd); } catch { /* sem permissao de escrita: segue */ }
   const cfgPath = join(cwd, ".claude", "core.json");
   const pendencias = [];
   const cfg = loadConfig(cwd);
@@ -85,8 +109,9 @@ function main(input) {
     ...pendencias.map((p) => `  - ${p}`),
     "",
     "Se o usuario for trabalhar em codigo ou em tarefas do tracker nesta sessao, ofereca",
-    "rodar `/core-setup` (uma vez por projeto, leva um minuto). Nao interrompa o que ele",
-    "pediu para fazer isso — mencione em uma linha e siga.",
+    "rodar `/core-init` — ele detecta a stack, instala o que falta, configura e confere",
+    "numa passada so. Nao interrompa o que ele pediu para fazer isso: mencione em",
+    "uma linha e siga.",
   ].join("\n");
 
   const completo = blocos.length

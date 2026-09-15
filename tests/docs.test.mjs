@@ -11,6 +11,7 @@
 // ainda descreve o que existe, que é onde a documentação apodrece primeiro.
 
 import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -106,6 +107,29 @@ console.log("\n=== a referência de configuração acompanha o código ===");
   const semDescricao = (REF.match(/\| — \|/g) || []).length;
   afirma("nenhuma opção sem descrição", semDescricao === 0,
     semDescricao ? `${semDescricao} sem texto — acrescente o comentário em lib/config.mjs` : "");
+}
+
+console.log("\n=== o plugin carrega os scripts que seus comandos chamam ===");
+// O plugin so carrega commands/, hooks/, skills/ e scripts/. Um comando que
+// invoque um script ausente dali quebra na instalacao por plugin — que e o
+// caminho principal, o que o README manda usar.
+{
+  const r = spawnSync(process.execPath,
+    [join(ROOT, "scripts", "sincronizar-plugin.mjs"), "--verificar"],
+    { encoding: "utf8", timeout: 30000 });
+  afirma("scripts do plugin em dia com /scripts", r.status === 0,
+    (r.stderr || "").split("\n").filter((l) => l.trim()).slice(1, 4).join(" "));
+
+  const textoComandos = readdirSync(join(ROOT, "plugins", "core", "commands"))
+    .filter((f) => f.endsWith(".md"))
+    .map((f) => ler(join("plugins", "core", "commands", f)))
+    .join("\n");
+  const citados = [...new Set(
+    [...textoComandos.matchAll(/AGENT_CORE_ROOT\/scripts\/([a-z-]+\.mjs)/g)].map((m) => m[1])
+  )];
+  const ausentes = citados.filter((f) => !existsSync(join(ROOT, "plugins", "core", "scripts", f)));
+  afirma(`os ${citados.length} scripts citados pelos comandos viajam no plugin`, !ausentes.length,
+    ausentes.length ? `faltam no plugin: ${ausentes.join(", ")}` : "");
 }
 
 console.log("\n=== versões coerentes ===");

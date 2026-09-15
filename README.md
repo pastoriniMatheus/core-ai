@@ -66,16 +66,25 @@ Passo a passo completo em [`docs/MAQUINA-NOVA.md`](docs/MAQUINA-NOVA.md).
 
 </details>
 
-## Configurar cada projeto
+## Deixar o projeto pleno: um comando
 
-O plugin traz hooks e skills. O que ele **não** sabe é o comando de teste do seu
-projeto, a branch base e o tracker.
+O plugin traz hooks e skills no momento em que é instalado. O que ele **não**
+sabe é o comando de teste deste projeto, a branch base, o tracker da equipe, nem
+quais ferramentas a máquina tem.
 
 Abra o Claude Code na pasta do projeto e rode:
 
 ```
-/core-setup
+/core-init
 ```
+
+Ele detecta a stack, pergunta **uma vez** o que não dá para inferir, instala as
+ferramentas que você autorizar, escreve a configuração, constrói o grafo, congela
+o baseline e confere no fim. O `session-start` oferece esse comando sozinho na
+primeira sessão de um projeto ainda não configurado.
+
+Para configurar uma peça só: `/core-setup` (projeto), `/core-tracker` (tracker),
+`/core-ferramentas` (ferramentas externas).
 
 Ele pergunta o que falta e escreve nos lugares certos.
 
@@ -230,7 +239,7 @@ autorização, uma publicação, que é a semântica de "por PR e por card".
 
 ## Comandos
 
-`/core-setup` `/core-tracker` `/core-ferramentas` `/core-doctor` `/baseline`
+`/core-init` `/core-setup` `/core-tracker` `/core-ferramentas` `/core-doctor` `/baseline`
 
 ## Trabalhar um card
 
@@ -297,12 +306,21 @@ Os scripts do repositório, e o que cada um faz:
 | `baseline.mjs` | mede tokens, turnos e tempo das sessões |
 | `gerar-referencia.mjs` | gera `docs/CONFIGURACAO.md` a partir do código |
 | `aceitacao.mjs` | teste ponta a ponta com sessões reais do Claude Code |
+| `gerar-referencia.mjs` | gera `docs/CONFIGURACAO.md` a partir do código |
+| `sincronizar-plugin.mjs` | espelha os scripts para dentro do plugin, e verifica |
+| `raiz.mjs` | acha o núcleo nas duas formas de instalação |
 
 | Modo | Comando | Quando |
 |---|---|---|
 | plugin | `claude plugin install core@agent-core` | uso normal, e para a equipe |
 | local | `install.mjs <projeto>` | desenvolver o núcleo; hooks apontam para este clone |
 | global | `install.mjs --global` | as guardas em todo projeto, sem publicar |
+
+**O plugin é autossuficiente.** Ele carrega os scripts que seus comandos
+invocam, e o `session-start` publica `AGENT_CORE_ROOT` apontando para onde o
+núcleo de fato está — o mesmo comando funciona na instalação por plugin e na
+local. `tests/docs.test.mjs` falha se um comando citar script que não viaja
+junto.
 
 O instalador é **aditivo**: mescla `permissions.allow`, preserva hooks de outras
 ferramentas, não sobrescreve uma skill sua de mesmo nome, e rodar duas vezes não
