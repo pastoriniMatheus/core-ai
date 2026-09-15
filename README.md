@@ -360,6 +360,7 @@ por construção, não por disciplina.
 | [`docs/manual.html`](docs/manual.html) | O manual completo, para abrir no navegador ou compartilhar |
 | [`docs/PASSO-A-PASSO.md`](docs/PASSO-A-PASSO.md) | Escopos de instalação e o que vai para o git |
 | [`docs/COMECAR.md`](docs/COMECAR.md) | Os testes de aceitação, um a um |
+| [`docs/CONFIGURACAO.md`](docs/CONFIGURACAO.md) | Referência das 30 opções — **gerada do código**, não escrita à mão |
 | [`docs/FERRAMENTAS.md`](docs/FERRAMENTAS.md) | Ponytail, mattpocock, Graphify, notebooklm — e a armadilha de cada uma |
 
 O manual é gerado por `python scripts/atualizar-manual.py`, que **lê os números da
