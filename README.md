@@ -6,6 +6,10 @@ instrução no prompt.
 
 Skills são conselho — o modelo pode ignorar. Hooks são controle.
 
+E a regra que rege a entrega: **autorização não transfere julgamento.** Você pode
+autorizar o agente a publicar o trabalho; não pode autorizá-lo a *ter revisado* o
+trabalho. Por isso fechar um card é o único bloqueio sem escape do núcleo.
+
 ---
 
 # Instalação
@@ -143,6 +147,24 @@ modelo se comportar. Falha por três motivos:
 3. **Duas autoridades de processo se anulam.** Quando um texto manda entrevistar
    até exaurir dúvidas e outro manda entregar e calar a boca, o agente oscila.
 
+## Onde cada conhecimento mora
+
+Três mecanismos diferentes guardam três coisas diferentes, e confundi-los é como
+o contexto se perde:
+
+| | Onde | O que guarda | Quem lê |
+|---|---|---|---|
+| **repositório** | `docs/`, `CLAUDE.md`, `CONTEXT.md` | a verdade do projeto | a **equipe** |
+| **checkpoint** | `.claude/core-state/` | onde a sessão parou | o agente, na retomada |
+| **memória do Claude** | `~/.claude/projects/.../memory/` | decisões e o porquê delas | o agente, em qualquer sessão |
+
+**O núcleo não escreve na memória do Claude** — ela é do usuário, não do projeto.
+E o checkpoint **não é log de sessão**: é o mínimo para retomar, e vence em 7 dias.
+
+A regra que separa os três: se a equipe precisa saber, vai para o **repositório**.
+Se é estado de trabalho em curso, vai para o **checkpoint**. Se é uma decisão que
+custou uma conversa e não está no código, vai para a **memória**.
+
 ## Quatro camadas, por mecanismo
 
 | Camada | Mecanismo | Ataca |
@@ -152,7 +174,13 @@ modelo se comportar. Falha por três motivos:
 | 2 | uma autoridade de processo + skills | desalinhamento |
 | 3 | roteamento de modelo, subagentes | custo |
 
-Regra: **tudo que puder descer de camada, desce.**
+Regra: **tudo que puder descer de camada, desce.** Se vira hook, não vira instrução.
+
+**Sobre a camada 3, com número medido.** Numa sessão de 75 turnos deste próprio
+projeto: **8.551.717** tokens de entrada reprocessada contra **202.465** de saída
+gerada — 42×. Uma ferramenta que corta 20% do código gerado ataca a parte
+pequena; delegar busca ampla a subagente e rotear modelo por tipo de tarefa
+ataca a grande. As duas somam, mas só uma muda a conta.
 
 ## Camada 0 — o que executa sozinho
 
