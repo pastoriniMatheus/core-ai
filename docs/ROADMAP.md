@@ -1,6 +1,6 @@
 # O que falta
 
-Estado em 16/09/2026, versão **0.6.0**. Nada aqui é bug conhecido: são coisas
+Estado em 16/09/2026, versão **0.6.1**. Nada aqui é bug conhecido: são coisas
 **nunca exercitadas** e decisões adiadas com motivo.
 
 O núcleo passa 209 testes de guarda, 22 de documentação e 17/17 na aceitação offline
