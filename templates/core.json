@@ -17,8 +17,7 @@
   "stopVerify": {
     "//": "Bloqueia o encerramento se houve edicao de codigo sem teste rodado depois.",
     "enabled": true,
-    "//testPatterns": "Acrescente o comando de teste deste projeto se ele nao estiver na lista padrao.",
-    "testPatterns": null,
+    "//testPatterns": "Acrescente o comando de teste deste projeto se ele nao estiver na lista padrao. Uma lista aqui SUBSTITUI a padrao - inclua tambem o que ja funcionava. Nao use null: sem esta chave, herda os 19 padroes.",
     "//projectCheck": "Build/typecheck de PROJETO INTEIRO, rodado uma vez antes de encerrar. E aqui que Rust, Java, C# e o typecheck de TS sao cobertos - o verificador por arquivo nao alcanca essas linguagens. Ex: [\"cargo check\", \"npx tsc --noEmit\"]",
     "projectCheck": []
   },

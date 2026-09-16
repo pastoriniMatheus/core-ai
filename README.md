@@ -32,8 +32,10 @@ claude plugin details core@agent-core
 ```
 
 ```
-Skills (9)   baseline, ci-local, core-doctor, core-setup, economia-de-contexto,
+Skills (8)   atacar-card, base-externa, ci-local, economia-de-contexto,
              entregar-trabalho, extrair-skill, fase, mapear-codigo
+Commands (7) baseline, core-doctor, core-externa, core-ferramentas, core-init,
+             core-setup, core-tracker
 Hooks (4)    PostToolUse, PreToolUse, Stop, SessionStart  (harness-only)
 Always-on:   ~874 tok   added to every session
 ```
@@ -275,7 +277,7 @@ Só necessário para **editar**, não para usar.
 ```bash
 git clone https://github.com/pastoriniMatheus/core-ai.git
 cd core-ai
-node tests/hooks.test.mjs              # 97 casos: as guardas
+node tests/hooks.test.mjs              # 209 casos: as guardas
 node tests/docs.test.mjs               # a documentacao ainda descreve o que existe?
 node scripts/aceitacao.mjs --offline   # instalação e guardas
 node scripts/aceitacao.mjs             # + sessões reais do Claude Code, ~10 min
@@ -417,7 +419,7 @@ por construção, não por disciplina.
 | [`docs/manual.html`](docs/manual.html) | O manual completo, para abrir no navegador ou compartilhar |
 | [`docs/PASSO-A-PASSO.md`](docs/PASSO-A-PASSO.md) | Escopos de instalação e o que vai para o git |
 | [`docs/COMECAR.md`](docs/COMECAR.md) | Os testes de aceitação, um a um |
-| [`docs/CONFIGURACAO.md`](docs/CONFIGURACAO.md) | Referência das 30 opções — **gerada do código**, não escrita à mão |
+| [`docs/CONFIGURACAO.md`](docs/CONFIGURACAO.md) | Referência das 50 opções — **gerada do código**, não escrita à mão |
 | [`docs/FERRAMENTAS.md`](docs/FERRAMENTAS.md) | Ponytail, mattpocock, Graphify, notebooklm — e a armadilha de cada uma |
 
 O manual é gerado por `python scripts/atualizar-manual.py`, que **lê os números da
