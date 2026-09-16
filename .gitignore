@@ -13,3 +13,4 @@ Thumbs.db
 
 # nada de configuracao local de teste
 .claude/settings.local.json
+.claude/nomes-proibidos.local

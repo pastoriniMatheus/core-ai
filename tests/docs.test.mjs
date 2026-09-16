@@ -217,32 +217,36 @@ console.log("\n=== o compose do servidor e YAML valido ===");
 console.log("\n=== nenhum nome de cliente, projeto ou maquina em arquivo versionado ===");
 // O nucleo e GENERICO: serve a qualquer projeto do usuario, e os projetos dele
 // sao clientes diferentes. Um exemplo com o nome de um cliente vaza para o
-// repositorio do outro, e um nome de usuario Windows num comentario vira
-// caminho de maquina num repo que se pretende compartilhar.
+// repositorio do outro, e um nome de usuario num comentario vira caminho de
+// maquina num repo que se pretende compartilhar.
 //
-// Ja aconteceu: "--workspace evolution", "EVO-123", "CRM-540" e "ETUS-0135"
-// (o usuario desta maquina) estavam em exemplos de codigo, doc e teste.
+// A LISTA DO QUE E PROIBIDO NAO E VERSIONADA. Ela e, por definicao, a lista dos
+// clientes e maquinas de quem mantem o nucleo — versiona-la seria cometer o
+// erro que ela existe para impedir. Mora em `.claude/nomes-proibidos.local`,
+// um regex por linha, ignorado pelo git. Sem o arquivo a checagem e pulada e
+// diz isso; nao finge que passou.
 {
-  const proibidos = [
-    /\bETUS[-_]0135\b/, /\bevolution\b/i, /\bEVO-[0-9]+/, /\buaz?ychat\b/i,
-    /pastorinimatheus@|@etus\./i, /C:[\\/]+Users[\\/]+ETUS/,
-  ];
-  // Autoria (marketplace e plugin.json) e de proposito, e este proprio teste
-  // cita os nomes que procura.
-  const permitidos = new Set([
-    ".claude-plugin/marketplace.json", "plugins/core/.claude-plugin/plugin.json", "tests/docs.test.mjs",
-  ]);
-  const r = spawnSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8", timeout: 20000 });
-  const arquivos = (r.stdout || "").split("\n").filter((f) => f && !f.endsWith("manual.html") && !permitidos.has(f));
-  const achados = [];
-  for (const f of arquivos) {
-    const txt = ler(f);
-    for (const p of proibidos) {
-      const m = txt.match(p);
-      if (m) { achados.push(`${f}: ${m[0]}`); break; }
+  const localPath = join(ROOT, ".claude", "nomes-proibidos.local");
+  if (!existsSync(localPath)) {
+    console.log("  SKIP  nenhum nome especifico — sem .claude/nomes-proibidos.local (um regex por linha)");
+  } else {
+    const proibidos = readFileSync(localPath, "utf8").split("\n")
+      .map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))
+      .map((l) => { try { return new RegExp(l, "i"); } catch { return null; } }).filter(Boolean);
+    // Autoria e de proposito.
+    const permitidos = new Set([".claude-plugin/marketplace.json", "plugins/core/.claude-plugin/plugin.json"]);
+    const r = spawnSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8", timeout: 20000 });
+    const arquivos = (r.stdout || "").split("\n").filter((f) => f && !f.endsWith("manual.html") && !permitidos.has(f));
+    const achados = [];
+    for (const f of arquivos) {
+      const txt = ler(f);
+      for (const p of proibidos) {
+        const m = txt.match(p);
+        if (m) { achados.push(`${f}: ${m[0]}`); break; }
+      }
     }
+    afirma(`nenhum nome especifico (${proibidos.length} padroes locais)`, !achados.length, achados.slice(0, 6).join(" | "));
   }
-  afirma("nenhum nome especifico de cliente/projeto/maquina", !achados.length, achados.slice(0, 6).join(" | "));
 }
 
 console.log("\n=== versões coerentes ===");
