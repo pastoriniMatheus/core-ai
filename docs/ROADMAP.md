@@ -1,6 +1,6 @@
 # O que falta
 
-Estado em 16/09/2026, versão **0.7.2**. Nada aqui é bug conhecido: são coisas
+Estado em 16/09/2026, versão **0.7.3**. Nada aqui é bug conhecido: são coisas
 **nunca exercitadas** e decisões adiadas com motivo.
 
 O núcleo passa 217 testes de guarda, 28 de documentação e 25/25 na aceitação
@@ -153,7 +153,7 @@ esta feature envia.
 
 A escolha de usar a CLI em vez do servidor MCP foi feita sobre um número medido:
 as 38 ferramentas do `notebooklm-py` custam **12.629 tokens** de system prompt em
-toda sessão, contra ~928 do plugin inteiro.
+toda sessão, contra ~1.378 do plugin inteiro (medido em 0.7.2).
 
 Há um caminho que mudaria a conta. Se as ferramentas MCP chegarem **deferidas** —
 só o nome, com o schema carregado sob demanda — o custo medido cai para 395

@@ -37,7 +37,7 @@ Skills (8)   atacar-card, base-externa, ci-local, economia-de-contexto,
 Commands (7) baseline, core-doctor, core-externa, core-ferramentas, core-init,
              core-setup, core-tracker
 Hooks (4)    PostToolUse, PreToolUse, Stop, SessionStart  (harness-only)
-Always-on:   ~874 tok   added to every session
+Always-on:   ~1.378 tok  added to every session
 ```
 
 **Pronto.** As guardas e as skills já valem em **qualquer projeto** desta máquina.

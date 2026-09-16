@@ -171,7 +171,9 @@ entregar hooks, skills e comandos em qualquer projeto — **sem** precisar do
 repositório do núcleo na máquina.
 
 Custo declarado pela própria ferramenta (`claude plugin details core@agent-core`):
-**~928 tokens sempre presentes** por sessão, que são as descrições das skills.
+**~1.378 tokens sempre presentes** por sessão, que são as descrições das skills e
+dos comandos. O número sobe quando o núcleo ganha skill — medido em 0.7.2 com
+`claude plugin details core@agent-core`, que é de onde ele deve sair sempre.
 O corpo de cada uma só carrega quando é invocada.
 
 ---

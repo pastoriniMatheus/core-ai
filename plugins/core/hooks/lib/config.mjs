@@ -133,7 +133,7 @@ export const DEFAULTS = {
     //
     // A CLI, e nao o MCP, e o cliente recomendado: as 38 ferramentas MCP do
     // notebooklm-py medem 12.629 tokens de system prompt em TODA sessao —
-    // 13,6x o plugin inteiro do nucleo (~928) — enquanto a CLI custa zero.
+    // 9x o plugin inteiro do nucleo (~1.378 em 0.7.2) — e a CLI custa zero.
     binarios: ["(^| |/|[\\\\])notebooklm(-mcp|-server)?([.](exe|cmd|bat))?( |$)"],
 
     // Se alguem ligar o MCP assim mesmo, o portao continua valendo. Casado

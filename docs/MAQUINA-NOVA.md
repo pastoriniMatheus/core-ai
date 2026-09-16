@@ -89,7 +89,7 @@ Você deve ver:
 Skills (9)   baseline, ci-local, core-doctor, core-setup, economia-de-contexto,
              entregar-trabalho, extrair-skill, fase, mapear-codigo
 Hooks (4)    PostToolUse, PreToolUse, Stop, SessionStart  (harness-only)
-Always-on:   ~874 tok   added to every session
+Always-on:   ~1.378 tok  added to every session
 ```
 
 Pronto: as **guardas e as skills já valem em qualquer projeto** desta máquina.
