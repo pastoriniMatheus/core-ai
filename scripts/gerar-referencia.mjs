@@ -72,6 +72,7 @@ const TITULOS = {
   stopVerify: "stopVerify — prova antes de encerrar",
   checkpoint: "checkpoint — retomar de onde parou",
   graph: "graph — grafo de código",
+  externa: "externa — a base de conhecimento externa",
   publish: "publish — o portão de publicação",
 };
 
