@@ -237,6 +237,17 @@ export const DEFAULTS = {
     // dele, ou com o prefixo `!` na sessao.
     sempreUsuario: ["externa[.]mjs[^|;&]* enviar( |$)"],
 
+    // A caderneta deste projeto no NotebookLM.
+    //
+    // A CLI exige saber QUAL caderneta em quase todo comando — sem isso ela
+    // responde "No notebook specified", e o erro nao tem nada a ver com sessao
+    // nem com permissao. Guardar o id aqui tira a pergunta do caminho.
+    //
+    // E um identificador, nao um segredo: quem nao tem a credencial da conta
+    // nao abre a caderneta com ele. Por isso mora no arquivo versionado, junto
+    // com o resto da configuracao que a equipe compartilha.
+    notebook: "",
+
     // Onde o material a enviar precisa estar antes de subir.
     //
     // Allowlist de ORIGEM, e ela vence a blocklist: nada sobe de dentro da

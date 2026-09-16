@@ -10,7 +10,7 @@
 // Não verifica se o texto está BOM — isso ninguém automatiza. Verifica se ele
 // ainda descreve o que existe, que é onde a documentação apodrece primeiro.
 
-import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync, rmSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -175,6 +175,43 @@ console.log("\n=== os scripts funcionam nos DOIS layouts ===");
     { encoding: "utf8", timeout: 90000 });
   afirma("externa.mjs acha o nucleo a partir do plugin", r.status === 0,
     (r.stderr || "").split("\n")[1] || "");
+}
+
+console.log("\n=== o compose do servidor e YAML valido ===");
+// Duas vezes seguidas o arquivo gerado foi recusado pelo proprio compose, e nas
+// duas o erro apontava uma coluna que nao explicava nada:
+//
+//   "missing a mount target"   um caminho do Windows comeca com "C:", e a
+//                              sintaxe curta de volume divide por ":"
+//   "mapping values are not    a mensagem do `:?` continha "rode: node ...",
+//    allowed in this context"  e um ": " nao-citado e mapeamento para o YAML
+//
+// Gerar YAML por template de string e facil de fazer e facil de quebrar. Este
+// teste le o que o script ESCREVE, e nao o que ele pretendia escrever.
+{
+  const tmp = join(ROOT, "tests", ".tmp-servidor");
+  spawnSync(process.execPath, [join(ROOT, "scripts", "externa.mjs"), "servidor", "preparar", "--projeto", tmp],
+    { encoding: "utf8", timeout: 60000 });
+  const yml = ler(join("tests", ".tmp-servidor", ".claude", "externa-servidor", "docker-compose.yml"));
+  afirma("o compose foi gerado", yml.length > 0);
+
+  // Sem YAML parser no projeto: o que se verifica sao as duas armadilhas que
+  // ja morderam, mais a promessa de seguranca que o arquivo faz.
+  const linhaSource = yml.split("\n").find((l) => l.trim().startsWith("source:")) || "";
+  afirma("o volume usa sintaxe longa e valor citado", /source: *"/.test(linhaSource), linhaSource.trim());
+  afirma("a mensagem do :? nao tem dois-pontos", !/:[?][^"]*: /.test(linhaSource), linhaSource.trim());
+
+  const portas = [...yml.matchAll(/^ *- *["']?([^"'\n]*:[0-9]+)["']?[ \t]*$/gm)].map((m) => m[1]);
+  afirma("a porta e publicada so em loopback", portas.length > 0 && portas.every((p) => p.startsWith("127.0.0.1:")),
+    portas.join(", "));
+  afirma("o restart tem teto (nao esconde crash-loop)", /restart: on-failure/.test(yml));
+  // A LINHA do comando, e nao o arquivo inteiro: o comentario ao lado explica
+  // justamente por que o urlopen saiu, e um teste que casa a explicacao da
+  // correcao acusa a correcao.
+  const linhaTest = yml.split("\n").find((l) => l.trim().startsWith("test:")) || "";
+  afirma("o healthcheck nao usa urlopen (que lanca em 401)", !/urlopen/.test(linhaTest), linhaTest.trim().slice(0, 80));
+
+  try { rmSync(tmp, { recursive: true, force: true }); } catch { /* ignora */ }
 }
 
 console.log("\n=== versões coerentes ===");

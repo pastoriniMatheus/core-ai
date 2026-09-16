@@ -1,9 +1,9 @@
 # O que falta
 
-Estado em 16/09/2026, versão **0.6.2**. Nada aqui é bug conhecido: são coisas
+Estado em 16/09/2026, versão **0.7.0**. Nada aqui é bug conhecido: são coisas
 **nunca exercitadas** e decisões adiadas com motivo.
 
-O núcleo passa 217 testes de guarda, 22 de documentação e 25/25 na aceitação
+O núcleo passa 217 testes de guarda, 28 de documentação e 25/25 na aceitação
 com sessões reais do Claude Code. Isso prova o que foi testado — não o que não
 foi, e esta página existe para que a diferença entre as duas coisas fique visível.
 
@@ -68,25 +68,37 @@ O modo servidor MCP do Graphify tem a configuração pronta e **o servidor não
 existe**. Decidido começar local: migrar depois é barato, e montar infra para um
 problema não medido é criar manutenção à toa.
 
-### A base externa nunca falou com o Google
+### A base externa ja falou com o Google — e o que sobrou
 
-Toda a camada 0 da base externa está testada — 66 casos, incluindo o portão, a
-autorização nomeada, o frescor e o que volta. **Mas nenhuma chamada real ao
-NotebookLM aconteceu**: não há sessão autenticada, porque autenticar exige um
-humano num navegador, e a conta tem de ser descartável.
+Em 16/09/2026 a integracao foi exercitada de ponta a ponta com sessao real
+(`pastorinimatheus@gmail.com`, conta pessoal, nao a corporativa):
 
-O que isso deixa sem prova:
+| O que | Resultado |
+|---|---|
+| `notebooklm login` | autenticou pelo Chrome do sistema, em perfil isolado |
+| `auth check --test` | todos os checks passaram, 29 cookies, token fetch ok |
+| as quatro portas com rede | 7/7, incluindo a `PUBLICA` com `curl` de verdade |
+| `source add` de 593 KB | a fonte entrou na base |
+| `notebooklm ask` | respondeu, em portugues |
+| o carimbo de procedencia | saiu na primeira consulta, calou na segunda |
+| `conferir` | acusou a fonte que estava no indice e nao na base |
+| servidor Docker | `healthy`, sem bearer 401, com bearer 400, zero reinicios |
 
-- que `notebooklm ask` devolve o que se espera, e em que formato
-- que o carimbo de procedência do `post-externa-resposta` casa com a saída real
-- que o servidor em Docker **serve** (ele constrói, sobe, e recusa subir sem
-  sessão — isso está provado; responder a uma consulta, não)
-- o tempo de uma consulta, que é o número que decide se ela vale a pena no meio
-  de uma decisão
+O que **nao** foi provado, e nao da para provar sem esperar:
 
-**Como fechar:** criar a conta descartável, `notebooklm login`, `notebooklm auth
-check --test`, e então uma consulta real. Vinte minutos, e é o maior buraco
-desta versão.
+- **a fonte nunca terminou de processar.** Um `.txt` de 593 KB ficou em
+  `preparing` por mais de cinco minutos, com tipo `unknown`. Entao a resposta do
+  `ask` veio de uma caderneta vazia — correta, mas nao sobre o material. Nao se
+  sabe se e o tamanho, o formato, ou lentidao do lado do Google.
+- **a resposta longa.** O teto de `tetoRespostaBytes` nunca foi atingido por
+  texto real, porque nao houve fonte indexada para gerar resposta longa.
+- **fonte vencida barrando consulta real.** Testado com data forjada no indice,
+  nunca com uma fonte que venceu de verdade.
+
+E uma armadilha nova, descoberta no caminho: com **Python 3.14** a biblioteca
+cospe `AssertionError` de `asyncio` no meio de chamadas que FUNCIONAM. O
+`source add` imprimiu cinco tracebacks e adicionou a fonte. Quem olhar a saida
+vai achar que falhou.
 
 ### `externa.mjs conferir` nunca comparou nada de verdade
 

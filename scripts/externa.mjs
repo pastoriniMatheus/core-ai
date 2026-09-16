@@ -2,7 +2,7 @@
 // A base de conhecimento EXTERNA: preparar, consultar, enviar, servir.
 //
 //   node scripts/externa.mjs estado                       # diagnostico (nunca falha duro)
-//   node scripts/externa.mjs preparar [--modo local|equipe]
+//   node scripts/externa.mjs preparar [--modo local|equipe] [--notebook <id>]
 //   node scripts/externa.mjs consultei <URL> "<o que eu precisava>"
 //   node scripts/externa.mjs enviar <arquivo> --origem <URL> [--dias 180]
 //   node scripts/externa.mjs registrar <arquivo> --origem <URL> [--dias 180]
@@ -179,10 +179,15 @@ function preparar() {
   }
 
   const core = readJson(corePath) || {};
-  core.externa = { ...(core.externa || {}), enabled: true, modo };
+  const notebook = flag("notebook", core.externa?.notebook || "");
+  core.externa = { ...(core.externa || {}), enabled: true, modo, ...(notebook ? { notebook } : {}) };
   mkdirSync(join(PROJETO, ".claude"), { recursive: true });
   writeFileSync(corePath, JSON.stringify(core, null, 2) + "\n");
-  say(`  ${c.ok}configurado${c.off}  .claude/core.json  ${c.dim}externa.modo = ${modo}${c.off}`);
+  say(`  ${c.ok}configurado${c.off}  .claude/core.json  ${c.dim}externa.modo = ${modo}${notebook ? ", notebook = " + notebook : ""}${c.off}`);
+  if (!notebook) {
+    say(`  ${c.dim}sem caderneta definida — \`notebooklm list\` mostra os ids, e${c.off}`);
+    say(`  ${c.dim}\`preparar --notebook <id>\` grava o escolhido${c.off}`);
+  }
 
   if (modo === "equipe") {
     say(`\n  ${c.warn}Modo equipe${c.off}`);
@@ -459,21 +464,54 @@ function conferir() {
   if (!idx.existe) morre(`${cfg.indice} nao existe. Rode: node "${SCRIPT}" preparar`);
 
   say(`\n${c.bold}Base real x indice${c.off}\n`);
-  const r = roda("notebooklm", ["source", "list"], { timeout: 90000 });
+
+  // A CLI exige saber QUAL caderneta. Sem isso ela devolve "No notebook
+  // specified" — e a versao anterior culpava a autenticacao por isso, num
+  // momento em que a sessao estava perfeita. Diagnostico que mente sobre uma
+  // configuracao boa custa mais caro que a ausencia dele.
+  // `--json`, e nao a tabela.
+  //
+  // A saida bonita da CLI e desenhada com caracteres de moldura, e a primeira
+  // versao disto os contava como fontes: "na base e fora do indice: ┌───┬───┐".
+  // Parsear texto feito para gente e escolher um formato que muda sem aviso —
+  // ainda mais numa biblioteca nao-oficial.
+  const argv = ["source", "list", "--json"];
+  if (cfg.notebook) argv.push("--notebook", cfg.notebook);
+  const r = roda("notebooklm", argv, { timeout: 90000 });
+
   if (r.status !== 0) {
+    const erro = (r.stderr || r.stdout || "").trim().split("\n").find((l) => l.trim()) || "";
     say(`  ${c.warn}nao consegui listar as fontes${c.off}`);
-    say(`  ${c.dim}${(r.stderr || r.stdout || "").trim().split("\n")[0].slice(0, 120)}${c.off}`);
-    say(`\n  ${c.dim}Sem sessao valida nao da para conferir. Rode: notebooklm auth check --test${c.off}\n`);
+    say(`  ${c.dim}${erro.slice(0, 140)}${c.off}\n`);
+    // A causa, dita pelo que o erro REALMENTE diz.
+    if (/no notebook specified/i.test(erro)) {
+      say(`  Falta dizer qual caderneta. Escolha uma:\n`);
+      say(`      notebooklm list`);
+      say(`\n  e grave o id no projeto:\n`);
+      say(`      node "${SCRIPT}" preparar --notebook <id>\n`);
+    } else if (/not logged in|authenticat|login/i.test(erro)) {
+      say(`  Sem sessao valida. Rode:  notebooklm login\n`);
+    } else {
+      say(`  ${c.dim}Rode o comando a mao para ver o erro inteiro:${c.off}`);
+      say(`      notebooklm source list${cfg.notebook ? ` --notebook ${cfg.notebook}` : ""}\n`);
+    }
     process.exit(1);
   }
 
-  // A saida da CLI e para gente, nao para maquina: o que da para extrair com
-  // confianca sao as LINHAS nao-vazias que nao sao cabecalho. Comparacao por
-  // substring dos dois lados, para nao depender do formato exato — que muda
-  // entre versoes de uma biblioteca nao-oficial.
-  const naBase = (r.stdout || "").split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l && !/^(-|=|#|total|sources?\b|nome\b|title\b)/i.test(l));
+  // A biblioteca pode cuspir traceback de asyncio no meio da saida sem que a
+  // chamada tenha falhado — medido com Python 3.14. Entao o JSON e recortado do
+  // que veio, em vez de assumir que a saida inteira e JSON.
+  const bruto = r.stdout || "";
+  const ini = bruto.indexOf("{");
+  const fim = bruto.lastIndexOf("}");
+  let dados = null;
+  try { dados = JSON.parse(bruto.slice(ini, fim + 1)); } catch { /* fica null */ }
+  if (!dados?.sources) {
+    say(`  ${c.warn}a saida de \`source list --json\` nao veio no formato esperado${c.off}`);
+    say(`  ${c.dim}${bruto.trim().split("\n").find((l) => l.trim())?.slice(0, 120) || "(vazia)"}${c.off}\n`);
+    process.exit(1);
+  }
+  const naBase = dados.sources.map((s) => s.title || s.id || "");
 
   const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "");
   const noIndice = idx.fontes.map((f) => ({ ...f, chave: norm(f.nome) }));
@@ -481,11 +519,11 @@ function conferir() {
   const invisiveis = naBase.filter((l) => !noIndice.some((f) => f.chave && norm(l).includes(f.chave)));
   const fantasmas = noIndice.filter((f) => !naBase.some((l) => f.chave && norm(l).includes(f.chave)));
 
-  say(`  ${c.dim}na base: ${naBase.length} linha(s)   no indice: ${noIndice.length} fonte(s)${c.off}\n`);
+  say(`  ${c.dim}na base: ${naBase.length} fonte(s)   no indice: ${noIndice.length} fonte(s)${c.off}\n`);
 
   if (invisiveis.length) {
     say(`  ${c.warn}Na base e FORA do indice${c.off} ${c.dim}— nunca vence, nao conta para o teto:${c.off}`);
-    for (const l of invisiveis.slice(0, 10)) say(`    ${l.slice(0, 90)}`);
+    for (const l of invisiveis.slice(0, 10)) say(`    ${String(l).slice(0, 90)}`);
     say(`\n  ${c.dim}Registre com:  node "${SCRIPT}" registrar <arquivo> --origem <URL>${c.off}\n`);
   }
   if (fantasmas.length) {
@@ -573,11 +611,30 @@ function servidor() {
     say(`  ${c.warn}logado nessa conta:${c.off} ${c.dim}a sessao e unica e derruba todos os clientes.${c.off}\n`);
     return;
   }
+  // `down` e `ps` tambem precisam das variaveis.
+  //
+  // O compose INTERPOLA o arquivo antes de qualquer subcomando, e `:?` sem
+  // valor aborta — entao `descer` falhava com "required variable is missing" e
+  // o container continuava de pe. Medido: um servidor que o usuario acha que
+  // derrubou, ainda no ar, segurando a sessao unica da conta Google.
+  //
+  // Aqui os valores sao so para satisfazer a interpolacao: nenhum deles muda o
+  // que `down` faz.
+  const ambiente = {
+    ...process.env,
+    NOTEBOOKLM_MCP_TOKEN: process.env.NOTEBOOKLM_MCP_TOKEN ||
+      readJson(join(PROJETO, ".claude", "settings.local.json"))?.env?.NOTEBOOKLM_MCP_TOKEN || "-",
+    NOTEBOOKLM_AUTH_DIR: process.env.NOTEBOOKLM_AUTH_DIR ||
+      join(process.env.USERPROFILE || process.env.HOME || ".", ".notebooklm"),
+  };
+
   if (sub === "descer") {
-    spawnSync("docker", ["compose", "down"], { cwd: DIR_SERVIDOR, stdio: "inherit", timeout: 120000, windowsHide: true });
+    spawnSync("docker", ["compose", "down"],
+      { cwd: DIR_SERVIDOR, stdio: "inherit", timeout: 120000, windowsHide: true, env: ambiente });
     return;
   }
-  const r = spawnSync("docker", ["compose", "ps"], { cwd: DIR_SERVIDOR, encoding: "utf8", timeout: 60000, windowsHide: true });
+  const r = spawnSync("docker", ["compose", "ps"],
+    { cwd: DIR_SERVIDOR, encoding: "utf8", timeout: 60000, windowsHide: true, env: ambiente });
   say("\n" + (r.stdout || r.stderr || "  (servidor nao preparado)") + "\n");
 }
 
@@ -666,7 +723,13 @@ const COMPOSE = `services:
       # inteiro com "missing a mount target". Medido nesta maquina. A sintaxe
       # longa nao divide nada, entao funciona igual nos dois sistemas.
       - type: bind
-        source: \${NOTEBOOKLM_AUTH_DIR:?rode: node scripts/externa.mjs servidor subir}
+        # Valor CITADO, e a mensagem do :? sem dois-pontos.
+        #
+        # Sem as aspas, um "rode: node ..." dentro do :? faz o YAML ler o ": "
+        # como mapeamento e recusar o arquivo inteiro — "mapping values are not
+        # allowed in this context", apontando para uma coluna que nao explica
+        # nada. Medido duas vezes aqui.
+        source: "\${NOTEBOOKLM_AUTH_DIR:?use o comando servidor subir}"
         target: /data/auth
         # rw, e nao ro, de proposito: o master token se re-minta sozinho e
         # precisa reescrever o arquivo. Montado somente-leitura, a sessao morre
