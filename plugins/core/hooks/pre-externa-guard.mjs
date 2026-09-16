@@ -22,13 +22,14 @@
 
 import { existsSync, statSync, openSync, readSync, closeSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { arquivosEscritosPorShell } from "./lib/escrita-shell.mjs";
 import { fileURLToPath } from "node:url";
 import { run, pass, denyTool } from "./lib/io.mjs";
 import { loadConfig } from "./lib/config.mjs";
 import { dirEstado } from "./lib/estado.mjs";
 import {
   bate, classifica, tipoDoComando, achaSegredo, caminhosCitados,
-  rastreado, dentroDoStaging, lerIndice, consomeAutorizacao,
+  rastreado, conteudoVersionado, dentroDoStaging, lerIndice, consomeAutorizacao,
 } from "./lib/externa.mjs";
 
 // Arquivo grande nao e lido inteiro: o portao tem 15s e o objetivo e achar
@@ -89,9 +90,52 @@ function conteudoDosArquivos(caminhos, cwd) {
   return partes.join("\n");
 }
 
+/**
+ * A chamada escreve no proprio token de autorizacao?
+ *
+ * Sem esta checagem, o mecanismo inteiro e teatro: o token diz qual arquivo
+ * pode subir, mas quem pode CRIAR o token cria a permissao que quiser. Medido —
+ * um `Write` de tres linhas em `.claude/core-state/externa-ok` fazia o portao
+ * liberar um envio que nunca passou por porta nenhuma.
+ *
+ * As quatro portas so significam alguma coisa se a assinatura delas nao puder
+ * ser falsificada. Vale para os dois caminhos: ferramenta de edicao e redirect
+ * de shell.
+ */
+function escreveNoToken(input) {
+  const alvo = /core-state[/\\]externa-ok/i;
+  const tool = input.tool_name || "";
+  if (/^(Edit|Write|MultiEdit|NotebookEdit)$/.test(tool)) {
+    return alvo.test(input.tool_input?.file_path || "");
+  }
+  if (tool === "Bash") {
+    const cmd = input.tool_input?.command || "";
+    if (arquivosEscritosPorShell(cmd).some((f) => alvo.test(f))) return true;
+    // Redirect, `touch`, `cp`, `mv` e afins que a extracao nao cobre: aqui
+    // basta o nome aparecer ao lado de algo que escreve.
+    return alvo.test(cmd) && /(>|>>|touch|cp |mv |tee|Set-Content|Out-File|Add-Content)/i.test(cmd);
+  }
+  return false;
+}
+
 run(async (input) => {
   const cfg = loadConfig(input.cwd).externa;
   if (!cfg?.enabled) pass();
+
+  // ------------------------------------------- 0a. forjar a autorizacao
+  if (escreveNoToken(input)) {
+    denyTool(
+      `[core] Esse arquivo e a autorizacao de envio da base externa.\n\n` +
+        `Escreve-lo a mao e assinar a propria licenca: as quatro portas continuam\n` +
+        `existindo e deixam de significar alguma coisa. O token so vale quando\n` +
+        `sai de quem CHECOU as portas por comando.\n\n` +
+        `Se um envio precisa acontecer, quem executa e o usuario:\n\n` +
+        `    node ${NUCLEO}/scripts/externa.mjs enviar <arquivo> --origem <URL>`
+    );
+  }
+
+  // Fora isso, ferramenta de edicao nao e assunto deste hook.
+  if (!/^(Bash)$/.test(input.tool_name || "") && !(input.tool_name || "").startsWith("mcp__")) pass();
 
   // ------------------------------------------- 0b. o comando do usuario
   // `externa.mjs enviar` e quem emite a autorizacao de envio. Se o agente o
@@ -165,7 +209,7 @@ run(async (input) => {
   // Vale para TODA acao, inclusive consulta: colar uma funcao do cliente dentro
   // da pergunta e a fuga mais provavel, e nenhuma instrucao em prompt a pega.
   // A checagem olha o comando E o conteudo dos arquivos citados nele.
-  const caminhos = caminhosCitados(texto);
+  const caminhos = caminhosCitados(texto, input.cwd);
   const achado =
     achaSegredo(cfg, texto, "comando") ||
     achaSegredo(cfg, conteudoDosArquivos(caminhos, input.cwd), "conteudo");
@@ -248,7 +292,13 @@ run(async (input) => {
   // pasta unica de onde as coisas podem sair nao tem.
   const arquivos = caminhos.filter((c) => !/^https?:\/\//i.test(c));
   const foraDoStaging = arquivos.filter((c) => !dentroDoStaging(c, input.cwd, cfg.staging));
-  const versionados = foraDoStaging.filter((c) => rastreado(c, input.cwd));
+  // Versionado pelo CAMINHO, ou pelo CONTEUDO. Um `cp docs/CONTEXT.md
+  // .claude/externa/` lavava a procedencia: o caminho novo nao esta rastreado,
+  // e a porta FORA abria para conteudo que e nosso. O git enderecca conteudo
+  // por hash, entao a pergunta certa tem resposta exata.
+  const versionados = arquivos.filter(
+    (c) => rastreado(c, input.cwd) || conteudoVersionado(c, input.cwd)
+  );
 
   if (versionados.length) {
     denyTool(

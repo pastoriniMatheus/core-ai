@@ -1,11 +1,10 @@
 # O que falta
 
-Estado em 16/09/2026, versão **0.6.1**. Nada aqui é bug conhecido: são coisas
+Estado em 16/09/2026, versão **0.6.2**. Nada aqui é bug conhecido: são coisas
 **nunca exercitadas** e decisões adiadas com motivo.
 
-O núcleo passa 209 testes de guarda, 22 de documentação e 17/17 na aceitação offline
-(as sessões reais foram exercitadas em 0.6.0; a rodada completa desta versão
-foi interrompida por falta de memória na máquina, e está pendente). Isso prova o que foi testado — não o que não
+O núcleo passa 217 testes de guarda, 22 de documentação e 25/25 na aceitação
+com sessões reais do Claude Code. Isso prova o que foi testado — não o que não
 foi, e esta página existe para que a diferença entre as duas coisas fique visível.
 
 ---
@@ -89,20 +88,16 @@ O que isso deixa sem prova:
 check --test`, e então uma consulta real. Vinte minutos, e é o maior buraco
 desta versão.
 
-### Conferir a base contra o índice
+### `externa.mjs conferir` nunca comparou nada de verdade
 
-`docs/base-externa.md` é a única fonte de validade das fontes, e ele é escrito à
-mão pelo `registrar`. **Nada reconcilia os dois.** Se alguém subir uma fonte e
-esquecer de registrar, ela existe no NotebookLM e não existe para o núcleo:
-nunca vence, e não conta para o teto.
+O comando existe e reconcilia `notebooklm source list` com
+`docs/base-externa.md` — mas sem sessão autenticada ele só foi exercitado no
+caminho de falha, onde imprime "não consegui listar as fontes" e sai.
 
-O caminho oposto está fechado — índice sumido com a feature preparada agora
-**barra a consulta**, em vez de silenciosamente desligar a guarda. O que falta é
-o `externa.mjs conferir`: rodar `notebooklm source list`, comparar com o índice,
-e dizer o que está na base e fora do índice, e vice-versa.
-
-Não foi feito porque exige sessão autenticada para ser testado de verdade, e
-essa sessão não existe ainda.
+O que falta provar: que a saída real de `source list` casa com os nomes do
+índice. A comparação é por substring normalizada, de propósito — o formato de
+saída de uma biblioteca não-oficial muda entre versões — mas "de propósito" não
+é o mesmo que "testado".
 
 ### Deferimento de ferramentas MCP — a verificação que pode inverter uma decisão
 

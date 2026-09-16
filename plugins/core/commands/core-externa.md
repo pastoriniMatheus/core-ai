@@ -105,7 +105,8 @@ Em poucas linhas, e sem enfeitar:
 - **bloqueio sem escape** para credencial, dado pessoal, arquivo versionado,
   compartilhamento, exclusão e qualquer coisa gerada por modelo.
 - **fonte vencida barra a consulta**, não avisa — e `docs/base-externa.md` diz
-  quais são e de quando.
+  quais são e de quando. `externa.mjs conferir` diz se esse arquivo ainda
+  descreve a base de verdade.
 - **o cliente é a CLI, não o MCP.** Ligar o servidor MCP põe 38 ferramentas no
   system prompt de toda sessão: 12.629 tokens, 13,6× o plugin inteiro do núcleo,
   pagos em todo turno inclusive nos que nunca tocam a base.

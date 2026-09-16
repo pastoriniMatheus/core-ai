@@ -277,7 +277,7 @@ Só necessário para **editar**, não para usar.
 ```bash
 git clone https://github.com/pastoriniMatheus/core-ai.git
 cd core-ai
-node tests/hooks.test.mjs              # 209 casos: as guardas
+node tests/hooks.test.mjs              # 217 casos: as guardas
 node tests/docs.test.mjs               # a documentacao ainda descreve o que existe?
 node scripts/aceitacao.mjs --offline   # instalação e guardas
 node scripts/aceitacao.mjs             # + sessões reais do Claude Code, ~10 min
@@ -312,7 +312,7 @@ Os scripts do repositório, e o que cada um faz:
 | `aceitacao.mjs` | teste ponta a ponta com sessões reais do Claude Code |
 | `gerar-referencia.mjs` | gera `docs/CONFIGURACAO.md` a partir do código |
 | `sincronizar-plugin.mjs` | espelha os scripts para dentro do plugin, e verifica |
-| `externa.mjs` | as quatro portas da base externa, o índice e o servidor de teste |
+| `externa.mjs` | as quatro portas da base externa, o índice, a conferência e o servidor de teste |
 | `raiz.mjs` | acha o núcleo nas duas formas de instalação |
 
 | Modo | Comando | Quando |

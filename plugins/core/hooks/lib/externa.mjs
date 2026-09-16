@@ -398,18 +398,66 @@ export function achaHeuristicas(cfg, texto) {
 
 // ------------------------------------------------------------- procedencia
 
-/** Caminhos de arquivo citados num comando ou num JSON de argumentos. */
-export function caminhosCitados(texto) {
+/**
+ * Caminhos de arquivo citados num comando ou num JSON de argumentos.
+ *
+ * O criterio principal e EXISTIR NO DISCO, e nao a forma do texto. A heuristica
+ * anterior — "tem barra ou tem extensao" — errava nos dois sentidos:
+ *
+ *   `Makefile`, `Dockerfile`, `LICENSE`  nao eram vistos como arquivo, entao
+ *                                        escapavam do scan de segredo e das
+ *                                        checagens de procedencia
+ *   `--titulo "Manual v2.1"`             virava "caminho fora do staging" por
+ *                                        causa do ponto, e barrava um envio
+ *                                        legitimo
+ *
+ * Existir e uma pergunta que o disco responde. A forma do texto continua valendo
+ * como rede: um caminho com separador conta mesmo sem existir, porque um envio
+ * apontando para fora precisa ser barrado, exista ou nao.
+ */
+export function caminhosCitados(texto, cwd) {
   const out = new Set();
+  const base = cwd || ".";
+  const existe = (t) => {
+    try { return existsSync(isAbsolute(t) ? t : join(base, t)); } catch { return false; }
+  };
   for (const t of tokens(texto)) {
     if (t.startsWith("-")) continue;
     if (/^https?:\/\//i.test(t)) continue;
-    if (!/[/\\]/.test(t) && !/[.][A-Za-z0-9]{1,6}$/.test(t)) continue;
-    out.add(t.replace(/^["']|["',}]+$/g, ""));
+    const limpo = t.replace(/^["']|["',}]+$/g, "");
+    if (!limpo) continue;
+    if (/[/\\]/.test(limpo) || existe(limpo)) out.add(limpo);
   }
   // Argumentos MCP chegam como JSON: os caminhos estao dentro das strings.
   for (const m of texto.matchAll(/"([^"]*[/\\][^"]*)"/g)) out.add(m[1]);
   return [...out];
+}
+
+/**
+ * O CONTEUDO deste arquivo ja existe no repositorio?
+ *
+ * `git ls-files` responde sobre o CAMINHO, e caminho se troca: copiar um
+ * arquivo versionado para a pasta de staging lavava a procedencia — o caminho
+ * novo nao esta rastreado, e a porta FORA abria para conteudo que e nosso.
+ *
+ * O git enderecca conteudo por hash. `hash-object` calcula o mesmo SHA que o
+ * git usaria, e `cat-file -e` diz se esse blob ja existe no repositorio. E
+ * exato, e custa dois processos.
+ */
+export function conteudoVersionado(arquivo, cwd) {
+  try {
+    const h = spawnSync("git", ["hash-object", "--", arquivo], {
+      cwd: cwd || ".", encoding: "utf8", timeout: 8000, windowsHide: true,
+    });
+    const sha = (h.stdout || "").trim();
+    if (h.status !== 0 || !/^[0-9a-f]{40}$/.test(sha)) return false;
+    const e = spawnSync("git", ["cat-file", "-e", sha], {
+      cwd: cwd || ".", encoding: "utf8", timeout: 8000, windowsHide: true,
+    });
+    return e.status === 0;
+  } catch {
+    return false;
+  }
 }
 
 /** O arquivo esta versionado neste repositorio? */

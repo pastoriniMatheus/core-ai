@@ -1067,6 +1067,39 @@ console.log("\n=== regressao: instalador nao pode divergir do plugin ===");
   if (!existsSync(tok)) { passed++; console.log("  PASS  externa: token vencido e apagado"); }
   else { failed++; console.log("  FAIL  externa: token vencido ficou no disco"); }
 
+  // --- forjar a autorizacao ---
+  // O token diz QUAL arquivo pode subir. Quem pode escreve-lo escreve a
+  // permissao que quiser, e as quatro portas viram teatro.
+  const tokPath = ".claude/core-state/externa-ok";
+  check("externa: Write no token e bloqueado", G,
+    { cwd: EX, tool_name: "Write", tool_input: { file_path: join(EX, tokPath), content: "{}" } }, "deny");
+  check("externa: Edit no token e bloqueado", G,
+    { cwd: EX, tool_name: "Edit", tool_input: { file_path: tokPath } }, "deny");
+  check("externa: redirect de shell no token e bloqueado", G,
+    cli(`echo '{}' > ${tokPath}`), "deny");
+  check("externa: touch no token e bloqueado", G, cli(`touch ${tokPath}`), "deny");
+  check("externa: Write noutro arquivo passa", G,
+    { cwd: EX, tool_name: "Write", tool_input: { file_path: join(EX, "src", "a.js"), content: "x" } }, "pass");
+
+  // --- procedencia por CONTEUDO, e nao so por caminho ---
+  // `git ls-files` responde sobre o caminho, e caminho se troca: um `cp` de um
+  // arquivo versionado para o staging lavava a origem.
+  writeFileSync(join(EX, ".claude", "externa", "copiado.md"), readFileSync(join(EX, "docs", "CONTEXT.md"), "utf8"));
+  autoriza(".claude/externa/copiado.md");
+  check("externa: copia de arquivo versionado e barrada pelo conteudo", G,
+    cli("notebooklm source add .claude/externa/copiado.md"), "deny");
+
+  // --- o que conta como caminho ---
+  // A heuristica antiga ("tem barra ou tem extensao") errava nos dois sentidos.
+  writeFileSync(join(EX, "Makefile"), "test:\n\techo ok\n");
+  spawnSync("git", ["add", "Makefile"], { cwd: EX, encoding: "utf8", windowsHide: true });
+  spawnSync("git", ["commit", "-qm", "mk"], { cwd: EX, encoding: "utf8", windowsHide: true });
+  check("externa: arquivo SEM extensao e reconhecido como caminho", G,
+    cli("notebooklm source add Makefile"), "deny");
+  autoriza(".claude/externa/manual.pdf");
+  check("externa: titulo com ponto nao vira caminho fora do staging", G,
+    cli('notebooklm source add .claude/externa/manual.pdf --title "Manual v2.1"'), "pass");
+
   // --- rotas indiretas: "e pelo outro caminho?" ---
   // O pacote instala TRES binarios, nao dois. E a base tambem se alcanca por um
   // interpretador ou por HTTP no servidor local. Cada um desses era um desvio de

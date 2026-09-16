@@ -44,7 +44,7 @@
         ]
       },
       {
-        "matcher": "Bash|mcp__.*",
+        "matcher": "Bash|Edit|Write|MultiEdit|mcp__.*",
         "hooks": [
           {
             "type": "command",

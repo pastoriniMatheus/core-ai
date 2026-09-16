@@ -6,6 +6,7 @@
 //   node scripts/externa.mjs consultei <URL> "<o que eu precisava>"
 //   node scripts/externa.mjs enviar <arquivo> --origem <URL> [--dias 180]
 //   node scripts/externa.mjs registrar <arquivo> --origem <URL> [--dias 180]
+//   node scripts/externa.mjs conferir                     # a base real bate com o indice?
 //   node scripts/externa.mjs servidor preparar|subir|descer|estado
 //
 // A razao de este script existir em vez de o agente rodar a CLI direto: as
@@ -443,6 +444,63 @@ function registrar() {
   say(`  ${c.dim}vence em ${vale} — a partir dai a CONSULTA e barrada ate alguem reenviar ou podar${c.off}\n`);
 }
 
+// -------------------------------------------------------------- conferir
+//
+// O indice e a UNICA fonte de validade das fontes, e ele e escrito a mao pelo
+// `registrar`. Nada reconciliava os dois: quem enviasse e esquecesse de
+// registrar ficava com uma fonte que existe no NotebookLM e nao existe para o
+// nucleo — nunca vence, e nao conta para o teto.
+//
+// A promessa central ("fonte vencida barra a consulta") so vale se o indice
+// descrever a base de verdade. Isto verifica.
+function conferir() {
+  if (!temBin("notebooklm")) morre("a CLI notebooklm nao esta instalada.");
+  const idx = ext.lerIndice(PROJETO, cfg);
+  if (!idx.existe) morre(`${cfg.indice} nao existe. Rode: node "${SCRIPT}" preparar`);
+
+  say(`\n${c.bold}Base real x indice${c.off}\n`);
+  const r = roda("notebooklm", ["source", "list"], { timeout: 90000 });
+  if (r.status !== 0) {
+    say(`  ${c.warn}nao consegui listar as fontes${c.off}`);
+    say(`  ${c.dim}${(r.stderr || r.stdout || "").trim().split("\n")[0].slice(0, 120)}${c.off}`);
+    say(`\n  ${c.dim}Sem sessao valida nao da para conferir. Rode: notebooklm auth check --test${c.off}\n`);
+    process.exit(1);
+  }
+
+  // A saida da CLI e para gente, nao para maquina: o que da para extrair com
+  // confianca sao as LINHAS nao-vazias que nao sao cabecalho. Comparacao por
+  // substring dos dois lados, para nao depender do formato exato — que muda
+  // entre versoes de uma biblioteca nao-oficial.
+  const naBase = (r.stdout || "").split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !/^(-|=|#|total|sources?\b|nome\b|title\b)/i.test(l));
+
+  const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const noIndice = idx.fontes.map((f) => ({ ...f, chave: norm(f.nome) }));
+
+  const invisiveis = naBase.filter((l) => !noIndice.some((f) => f.chave && norm(l).includes(f.chave)));
+  const fantasmas = noIndice.filter((f) => !naBase.some((l) => f.chave && norm(l).includes(f.chave)));
+
+  say(`  ${c.dim}na base: ${naBase.length} linha(s)   no indice: ${noIndice.length} fonte(s)${c.off}\n`);
+
+  if (invisiveis.length) {
+    say(`  ${c.warn}Na base e FORA do indice${c.off} ${c.dim}— nunca vence, nao conta para o teto:${c.off}`);
+    for (const l of invisiveis.slice(0, 10)) say(`    ${l.slice(0, 90)}`);
+    say(`\n  ${c.dim}Registre com:  node "${SCRIPT}" registrar <arquivo> --origem <URL>${c.off}\n`);
+  }
+  if (fantasmas.length) {
+    say(`  ${c.warn}No indice e FORA da base${c.off} ${c.dim}— barra consulta a toa quando vencer:${c.off}`);
+    for (const f of fantasmas.slice(0, 10)) say(`    ${f.nome}  ${c.dim}(vale ate ${f.vale})${c.off}`);
+    say(`\n  ${c.dim}Tire a linha de ${cfg.indice}, ou reenvie a fonte.${c.off}\n`);
+  }
+  if (!invisiveis.length && !fantasmas.length) {
+    say(`  ${c.ok}O indice descreve a base.${c.off}\n`);
+  }
+  // Divergencia nao e erro de execucao: e trabalho de curadoria. Sair 1 aqui
+  // faria o doctor pintar vermelho por algo que so o humano resolve.
+  process.exit(0);
+}
+
 // -------------------------------------------------------------- servidor
 //
 // O servidor de teste existe para provar o caminho inteiro numa maquina so,
@@ -456,6 +514,27 @@ function servidor() {
 
   if (sub === "subir") {
     if (!existsSync(join(DIR_SERVIDOR, "docker-compose.yml"))) servidorPreparar();
+
+    // A publicacao ainda e so loopback?
+    //
+    // O compose e um arquivo no projeto do usuario, e editavel. Trocar
+    // "127.0.0.1:9420:9420" por "9420:9420" publica uma sessao Google COMPLETA
+    // na rede do escritorio — e a imagem ja sobe com o guard de Host header
+    // desligado, porque o bind interno e 0.0.0.0. E o unico erro grave possivel
+    // aqui, e ele e silencioso: o container sobe igual.
+    const comp = readFileSync(join(DIR_SERVIDOR, "docker-compose.yml"), "utf8");
+    const portas = [...comp.matchAll(/^ *- *["']?([^"'\n]*:[0-9]+)["']?[ \t]*$/gm)].map((m) => m[1]);
+    const expostas = portas.filter((x) => !/^(127[.]0[.]0[.]1|localhost|\[::1\]):/.test(x));
+    if (expostas.length) {
+      morre(
+        "o docker-compose.yml publica a porta FORA de loopback:\n\n" +
+        expostas.map((x) => `      ${x}`).join("\n") + "\n\n" +
+        "  Isso poe uma sessao Google INTEIRA na rede do escritorio. O bind de\n" +
+        "  DENTRO do container ja e 0.0.0.0 por necessidade — senao o mapeamento\n" +
+        "  de porta nao alcanca — e o unico isolamento e o prefixo do lado do host.\n\n" +
+        '  Volte para:  - "127.0.0.1:9420:9420"'
+      );
+    }
 
     // A AUTENTICACAO PRIMEIRO, e antes de tocar no Docker.
     //
@@ -662,7 +741,7 @@ so vira producao se a tabela de metricas do ROADMAP mostrar demanda.
 `;
 
 // -------------------------------------------------------------------------
-const COMANDOS = { estado, preparar, consultei, enviar, registrar, servidor };
+const COMANDOS = { estado, preparar, consultei, enviar, registrar, conferir, servidor };
 const fn = COMANDOS[cmd];
 if (!fn) morre(`comando desconhecido: ${cmd}\n  use: ${Object.keys(COMANDOS).join(" | ")}`);
 fn();

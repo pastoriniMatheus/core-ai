@@ -136,6 +136,19 @@ node $AGENT_CORE_ROOT/scripts/externa.mjs enviar <arquivo> --origem <URL>
   seguinte lê o palpite do agente como se fosse a documentação do fornecedor.
   É o loop de auto-contaminação, e ele não dá sinal de que começou.
 
+## Conferir
+
+O índice é a única fonte de validade das fontes, e ele é escrito à mão. Se
+alguém enviar e esquecer de registrar, a fonte existe no NotebookLM e **não
+existe** para o núcleo: nunca vence, e não conta para o teto.
+
+```bash
+node $AGENT_CORE_ROOT/scripts/externa.mjs conferir
+```
+
+Roda `notebooklm source list` e compara com `docs/base-externa.md`. Vale quando
+a consulta trouxer algo que não está no índice, ou antes de confiar numa data.
+
 ## Podar
 
 Fonte vencida **barra a consulta**, não avisa. É deliberado: um aviso que aparece
