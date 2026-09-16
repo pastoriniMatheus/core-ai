@@ -451,7 +451,7 @@
       <span class="chip good">217/217 unidade</span>
       <span class="chip good">19/19 aceita&ccedil;&atilde;o</span>
       <span class="chip">8 skills</span>
-      <span class="chip">4 comandos</span>
+      <span class="chip">7 comandos</span>
       <span class="chip">Node 18+, zero dependências</span>
     </div>
   </header>
@@ -1055,7 +1055,7 @@ node scripts/baseline.mjs --days 7 --compare antes</code></pre>
       <p class="lede">Configure o tracker uma vez, e o identificador vira o comando.</p>
 
       <p>Dentro de qualquer projeto:</p>
-      <blockquote style="margin:0 0 20px;padding:12px 18px;border-left:3px solid var(--accent);color:var(--ink);font-size:17px">ataque CRM-540</blockquote>
+      <blockquote style="margin:0 0 20px;padding:12px 18px;border-left:3px solid var(--accent);color:var(--ink);font-size:17px">ataque PROJ-540</blockquote>
 
       <p>A skill <code>atacar-card</code> busca o card, conduz as seis fases &mdash; fixar o terreno, investigar, decidir, implementar, provar, publicar &mdash; e <strong>para no port&atilde;o</strong> pedindo autoriza&ccedil;&atilde;o antes da PR e antes de mover o card.</p>
 
@@ -1209,7 +1209,7 @@ node scripts/aceitacao.mjs --manter   <span class="c"># não apaga o projeto no 
       <ul>
         <li><strong>Mac e Linux.</strong> O ramo Unix de <code>binExiste</code> nunca executou como código de hook.</li>
         <li><strong>O marketplace.</strong> Os hooks foram carregados por <code>settings.json</code> apontando caminhos absolutos; a distribuição via plugin GitHub não foi exercitada.</li>
-        <li><strong>MCP em sessão real.</strong> Os 9 testes de MCP são sintéticos — nenhum servidor MCP de tracker foi acionado de verdade.</li>
+        <li><strong>MCP em sessão real.</strong> Os testes de MCP são sintéticos — nenhum servidor MCP de tracker foi acionado de verdade.</li>
         <li><strong>Codex, Antigravity e Cursor.</strong> As skills e o <code>CLAUDE.md</code> portam como <code>AGENTS.md</code>; os hooks e as permissões, não. Sem eles sobra instrução que o modelo obedece quase sempre — que é o que este núcleo existe para substituir.</li>
         <li><strong>Convivência com outros hooks</strong> registrados no mesmo evento.</li>
       </ul>

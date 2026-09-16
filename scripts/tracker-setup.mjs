@@ -2,7 +2,7 @@
 // Configura o acesso ao tracker de um projeto.
 //
 //   echo "<token>" | node scripts/tracker-setup.mjs --projeto <dir> --tracker plane \
-//                       --url https://plane.exemplo.com --workspace evolution [--projeto-id X]
+//                       --url https://plane.exemplo.com --workspace <workspace> [--projeto-id X]
 //
 //   node scripts/tracker-setup.mjs --projeto <dir> --testar     # so testa o que ja existe
 //   node scripts/tracker-setup.mjs --projeto <dir> --detectar   # o projeto ja tem MCP de tracker?

@@ -249,7 +249,7 @@ autorização, uma publicação, que é a semântica de "por PR e por card".
 
 Configure o tracker uma vez com `/core-tracker` e depois, em qualquer projeto:
 
-> ataque CRM-540
+> ataque PROJ-540
 
 A skill `atacar-card` busca o card, conduz as seis fases (fixar o terreno,
 investigar, decidir, implementar, provar, publicar) e **para no portão** pedindo
@@ -260,8 +260,8 @@ de nenhuma empresa. Trocar de tracker é trocar uma linha de configuração.
 
 ```bash
 # o que a skill usa por baixo
-node $AGENT_CORE_ROOT/scripts/tracker.mjs --projeto . card CRM-540
-echo "texto" | node $AGENT_CORE_ROOT/scripts/tracker.mjs --projeto . comment CRM-540 -
+node $AGENT_CORE_ROOT/scripts/tracker.mjs --projeto . card PROJ-540
+echo "texto" | node $AGENT_CORE_ROOT/scripts/tracker.mjs --projeto . comment PROJ-540 -
 ```
 
 Buscar e comentar passam livres. **Mover o card é interceptado** — inclusive
@@ -363,7 +363,7 @@ ferramenta de retomada faz ninguém ler o que importa. Vence em 7 dias: um retra
 velho atrapalha mais do que ajuda.
 
 O card é procurado **só no que foi conversado**, nunca em caminho de arquivo — um
-diretório chamado `...-ETUS-0135-...` viraria "card ETUS-0135" e a retomada
+diretório chamado `...-ACME-0042-...` viraria "card ACME-0042" e a retomada
 apontaria para um card que não existe.
 
 Comentar o checkpoint no card é opt-in (`checkpoint.comentarNoCard`): um

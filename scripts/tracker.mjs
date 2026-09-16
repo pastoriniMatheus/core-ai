@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // Acesso ao tracker configurado pelo projeto — genérico por construção.
 //
-//   node scripts/tracker.mjs --projeto <dir> card CRM-540
+//   node scripts/tracker.mjs --projeto <dir> card PROJ-540
 //   node scripts/tracker.mjs --projeto <dir> mine
 //   node scripts/tracker.mjs --projeto <dir> states
-//   echo "texto" | node scripts/tracker.mjs --projeto <dir> comment CRM-540 -
-//   node scripts/tracker.mjs --projeto <dir> move CRM-540 "In Review"
+//   echo "texto" | node scripts/tracker.mjs --projeto <dir> comment PROJ-540 -
+//   node scripts/tracker.mjs --projeto <dir> move PROJ-540 "In Review"
 //
 // A configuração vem de .claude/core.json (qual tracker, URL, workspace) e o
 // token de .claude/settings.local.json. Nada aqui sabe o nome de nenhuma
@@ -67,9 +67,9 @@ async function api(url, { metodo = "GET", headers = {}, corpo = null } = {}) {
 }
 
 // ------------------------------------------------------------------- Plane
-// O identificador humano ("CRM-540") não é a chave da API: o Plane guarda o
+// O identificador humano ("PROJ-540") não é a chave da API: o Plane guarda o
 // prefixo no projeto e o número na issue. Resolver os dois é o que permite
-// falar "CRM-540" em vez de colar um UUID.
+// falar "PROJ-540" em vez de colar um UUID.
 const plane = {
   headers: { "X-API-Key": token },
 
@@ -80,7 +80,7 @@ const plane = {
 
   async resolver(identificador) {
     const m = String(identificador).match(/^([A-Za-z]+)-(\d+)$/);
-    if (!m) erro(`"${identificador}" não parece um identificador (esperado algo como CRM-540).`);
+    if (!m) erro(`"${identificador}" não parece um identificador (esperado algo como PROJ-540).`);
     const [, prefixo, numero] = m;
 
     const projetos = await this.projetos();
@@ -158,7 +158,7 @@ const linear = {
   async card(id) {
     // `id` na selecao nao e decorativo: commentCreate exige o UUID da issue, e
     // sem pedi-lo aqui `issue.id` era sempre undefined — o comentario ia com o
-    // identificador humano ("EVO-123") no lugar, e so funcionaria se o Linear
+    // identificador humano ("PROJ-123") no lugar, e so funcionaria se o Linear
     // aceitasse isso por acaso.
     const d = await this.gql(
       `query($id:String!){ issue(id:$id){ id identifier title description priority
@@ -240,7 +240,7 @@ const AJUDA = `
 try {
   switch (comando) {
     case "card": {
-      if (!resto[0]) erro("informe o identificador.", "Ex: card CRM-540");
+      if (!resto[0]) erro("informe o identificador.", "Ex: card PROJ-540");
       console.log("\n" + impl.formatar(await impl.card(resto[0])) + "\n");
       break;
     }

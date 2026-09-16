@@ -1,6 +1,6 @@
 ---
 name: atacar-card
-description: Use quando o usuário mandar trabalhar um card do tracker — "ataque CRM-540", "resolve o EVO-123", "pega essa issue", "conserta isso" com um identificador. Busca o card, conduz as seis fases do trabalho e para no portão de publicação. Funciona com qualquer tracker configurado por /core-tracker.
+description: Use quando o usuário mandar trabalhar um card do tracker — "ataque PROJ-540", "resolve o ABC-123", "pega essa issue", "conserta isso" com um identificador. Busca o card, conduz as seis fases do trabalho e para no portão de publicação. Funciona com qualquer tracker configurado por /core-tracker.
 ---
 
 # Atacar um card

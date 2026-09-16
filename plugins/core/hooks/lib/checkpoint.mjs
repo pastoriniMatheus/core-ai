@@ -70,7 +70,7 @@ export function montar({ transcriptPath, cwd, cfg = {} }) {
   const pedidos = [];
   // Só o que foi CONVERSADO entra na busca por card. Varrer o transcript inteiro
   // acha o identificador em caminho de arquivo — um diretório temporário
-  // chamado "...-ETUS-0135-..." vira "card ETUS-0135", e o checkpoint abre a
+  // chamado "...-ACME-0042-..." vira "card ACME-0042", e o checkpoint abre a
   // próxima sessão apontando para um card que não existe.
   const conversa = [];
   let ultimoTexto = "";

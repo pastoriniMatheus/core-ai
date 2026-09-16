@@ -1,9 +1,9 @@
 # O que falta
 
-Estado em 16/09/2026, versão **0.7.3**. Nada aqui é bug conhecido: são coisas
+Estado em 16/09/2026, versão **0.7.4**. Nada aqui é bug conhecido: são coisas
 **nunca exercitadas** e decisões adiadas com motivo.
 
-O núcleo passa 217 testes de guarda, 28 de documentação e 25/25 na aceitação
+O núcleo passa 217 testes de guarda, 29 de documentação e 25/25 na aceitação
 com sessões reais do Claude Code. Isso prova o que foi testado — não o que não
 foi, e esta página existe para que a diferença entre as duas coisas fique visível.
 
@@ -26,7 +26,7 @@ observado rodando.
 
 ### MCP num tracker de verdade
 
-Os 13 testes de MCP montam o evento à mão. **Nenhum servidor MCP foi acionado**
+Os testes de MCP montam o evento à mão. **Nenhum servidor MCP foi acionado**
 — nem para ler card, nem para barrar escrita.
 
 O que isso não prova: que os nomes reais das ferramentas de cada servidor
@@ -71,7 +71,7 @@ problema não medido é criar manutenção à toa.
 ### A base externa ja falou com o Google — e o que sobrou
 
 Em 16/09/2026 a integracao foi exercitada de ponta a ponta com sessao real
-(`pastorinimatheus@gmail.com`, conta pessoal, nao a corporativa):
+(conta Google pessoal, nao a corporativa):
 
 | O que | Resultado |
 |---|---|
@@ -188,7 +188,7 @@ Planejadas desde o início, nenhuma iniciada:
 
 | Camada | O que entraria |
 |---|---|
-| **evo** | `core.json` com o comando de teste do CRM (roda no container), `develop` como base, o Plane em `trackerPatterns` |
+| **projeto A** | `core.json` com o comando de teste dele (roda em container), `develop` como base, o Plane em `trackerPatterns` |
 | **projeto B** | idem, com os valores daquele projeto |
 
 A arquitetura já suporta: um plugin novo em `plugins/<nome>/`, declarado no
@@ -245,4 +245,4 @@ cria o próximo bug, e só revisão pega.
 3. **MCP de verdade** — precisa só da credencial que já existe
 4. **Convivência com o Orca**
 5. **Graphify local** — a ferramenta que mais acrescentaria
-6. **Camada Evo** — depois do baseline, nunca antes
+6. **Primeira camada de projeto** — depois do baseline, nunca antes

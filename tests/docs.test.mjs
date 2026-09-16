@@ -214,6 +214,37 @@ console.log("\n=== o compose do servidor e YAML valido ===");
   try { rmSync(tmp, { recursive: true, force: true }); } catch { /* ignora */ }
 }
 
+console.log("\n=== nenhum nome de cliente, projeto ou maquina em arquivo versionado ===");
+// O nucleo e GENERICO: serve a qualquer projeto do usuario, e os projetos dele
+// sao clientes diferentes. Um exemplo com o nome de um cliente vaza para o
+// repositorio do outro, e um nome de usuario Windows num comentario vira
+// caminho de maquina num repo que se pretende compartilhar.
+//
+// Ja aconteceu: "--workspace evolution", "EVO-123", "CRM-540" e "ETUS-0135"
+// (o usuario desta maquina) estavam em exemplos de codigo, doc e teste.
+{
+  const proibidos = [
+    /\bETUS[-_]0135\b/, /\bevolution\b/i, /\bEVO-[0-9]+/, /\buaz?ychat\b/i,
+    /pastorinimatheus@|@etus\./i, /C:[\\/]+Users[\\/]+ETUS/,
+  ];
+  // Autoria (marketplace e plugin.json) e de proposito, e este proprio teste
+  // cita os nomes que procura.
+  const permitidos = new Set([
+    ".claude-plugin/marketplace.json", "plugins/core/.claude-plugin/plugin.json", "tests/docs.test.mjs",
+  ]);
+  const r = spawnSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8", timeout: 20000 });
+  const arquivos = (r.stdout || "").split("\n").filter((f) => f && !f.endsWith("manual.html") && !permitidos.has(f));
+  const achados = [];
+  for (const f of arquivos) {
+    const txt = ler(f);
+    for (const p of proibidos) {
+      const m = txt.match(p);
+      if (m) { achados.push(`${f}: ${m[0]}`); break; }
+    }
+  }
+  afirma("nenhum nome especifico de cliente/projeto/maquina", !achados.length, achados.slice(0, 6).join(" | "));
+}
+
 console.log("\n=== versões coerentes ===");
 
 // A versão é o único sinal que `claude plugin update` usa. Se os dois arquivos

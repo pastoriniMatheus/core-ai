@@ -205,22 +205,22 @@ console.log("\n=== regressao: o proprio tracker.mjs passa pelo portao ===");
   const cmd = (c) => ({ cwd: dir, transcript_path: editouETestou, tool_input: { command: c } });
 
   check("tracker.mjs move -> nega", "pre-publish-guard.mjs",
-    cmd('node scripts/tracker.mjs --projeto . move CRM-540 "In Review"'), "deny");
+    cmd('node scripts/tracker.mjs --projeto . move PROJ-540 "In Review"'), "deny");
   check("tracker.mjs move autorizado -> passa", "pre-publish-guard.mjs",
-    cmd('CORE_PUBLISH_OK=1 node scripts/tracker.mjs --projeto . move CRM-540 "In Review"'), "pass");
+    cmd('CORE_PUBLISH_OK=1 node scripts/tracker.mjs --projeto . move PROJ-540 "In Review"'), "pass");
   check("tracker.mjs card (leitura) -> passa", "pre-publish-guard.mjs",
-    cmd("node scripts/tracker.mjs --projeto . card CRM-540"), "pass");
+    cmd("node scripts/tracker.mjs --projeto . card PROJ-540"), "pass");
   check("tracker.mjs comment -> passa", "pre-publish-guard.mjs",
-    cmd("node scripts/tracker.mjs --projeto . comment CRM-540 -"), "pass");
+    cmd("node scripts/tracker.mjs --projeto . comment PROJ-540 -"), "pass");
 
   // Estado final no FIM do comando: o padrao exigia um delimitador depois, e
   // num comando de shell nao ha caractere algum apos o ultimo argumento.
   check("move Done no fim do comando -> nega", "pre-publish-guard.mjs",
-    cmd("node scripts/tracker.mjs --projeto . move CRM-540 Done"), "deny");
+    cmd("node scripts/tracker.mjs --projeto . move PROJ-540 Done"), "deny");
   check("move Done autorizado -> nega mesmo assim", "pre-publish-guard.mjs",
-    cmd("CORE_PUBLISH_OK=1 node scripts/tracker.mjs --projeto . move CRM-540 Done"), "deny");
+    cmd("CORE_PUBLISH_OK=1 node scripts/tracker.mjs --projeto . move PROJ-540 Done"), "deny");
   check("move concluido no fim -> nega", "pre-publish-guard.mjs",
-    cmd("node scripts/tracker.mjs --projeto . move CRM-540 concluido"), "deny");
+    cmd("node scripts/tracker.mjs --projeto . move PROJ-540 concluido"), "deny");
 }
 
 console.log("\n=== regressao: escrita por SHELL nao pode escapar ===");
@@ -528,7 +528,7 @@ console.log("\n=== checkpoint: onde a sessao parou ===");
   afirmaCp("acusa falta de prova", md.includes("SEM PROVA"));
 
   // O identificador NAO pode vir de caminho de arquivo: um diretorio chamado
-  // "...-ETUS-0135-..." viraria "card ETUS-0135", e a retomada da sessao
+  // "...-ACME-0042-..." viraria "card ACME-0042", e a retomada da sessao
   // seguinte abriria apontando para um card que nao existe.
   const semCard = jsonl("cp2.jsonl", [
     { message: { role: "user", content: [{ type: "text", text: "ajusta esse arquivo" }] } },

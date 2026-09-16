@@ -58,7 +58,7 @@ Peça o token por último e diga que ele **não vai para nenhum arquivo versiona
 
 ```bash
 echo "<token>" | node $AGENT_CORE_ROOT/scripts/tracker-setup.mjs \
-  --projeto "." --tracker plane --url https://plane.exemplo.com --workspace evolution
+  --projeto "." --tracker plane --url https://plane.exemplo.com --workspace <workspace>
 ```
 
 O token vai por **stdin**, não por argumento: `argv` aparece em `ps`, fica no

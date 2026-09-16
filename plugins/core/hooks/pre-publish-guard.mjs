@@ -92,7 +92,7 @@ run(async (input) => {
   // nao e o agente. Este e o unico bloqueio do nucleo que nao aceita
   // autorizacao: nem o usuario pedindo torna a acao do agente.
   // O delimitador final aceita fim de string: num comando de shell o estado é o
-  // último argumento (`move CRM-540 Done`) e não há caractere depois dele —
+  // último argumento (`move PROJ-540 Done`) e não há caractere depois dele —
   // exigir um deixava o bloqueio mais importante do núcleo passar batido.
   const estadoProibido = cfg.publish.forbiddenStates.map((s) => `["' :=]${s}(["',}]|\\s|$)`);
   if (ehTracker && bate(estadoProibido, texto)) {
