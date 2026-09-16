@@ -436,7 +436,7 @@
     <p class="standfirst">Um núcleo genérico que organiza as diretrizes do agente por <strong>mecanismo de execução</strong> — não por ferramenta. Tudo que pode virar hook vira hook; só o que sobra vira instrução.</p>
     <div class="status-row">
       <span class="chip good">Camada 0 implementada</span>
-      <span class="chip good">168/168 unidade</span>
+      <span class="chip good">201/201 unidade</span>
       <span class="chip good">19/19 aceita&ccedil;&atilde;o</span>
       <span class="chip">8 skills</span>
       <span class="chip">4 comandos</span>
@@ -660,7 +660,7 @@ prefixado com CORE_DEP_OK=1.</code></pre>
             <tr><td>YAML e check de projeto</td><td>YAML válido e quebrado, projectCheck que passa, falha e não deve rodar</td><td class="num-cell">6</td></tr>
             <tr><td>Configuração e degradação</td><td>ferramenta ausente não bloqueia; aviso de projeto não configurado</td><td class="num-cell">3</td></tr>
             <tr><td>Portão por MCP</td><td>tracker e PR via MCP, leitura passa, Done bloqueado, token one-shot e vencido</td><td class="num-cell">9</td></tr>
-            <tr><td colspan="2" style="color:var(--accent-ink);font-weight:600">Total</td><td class="num-cell" style="color:var(--accent-ink);font-weight:600">168 / 168</td></tr>
+            <tr><td colspan="2" style="color:var(--accent-ink);font-weight:600">Total</td><td class="num-cell" style="color:var(--accent-ink);font-weight:600">201 / 201</td></tr>
           </tbody>
         </table>
       </div>
@@ -1269,7 +1269,7 @@ node scripts/aceitacao.mjs --manter   <span class="c"># não apaga o projeto no 
           <thead><tr><th>Porta</th><th>Exige</th><th>Verifica-se com</th></tr></thead>
           <tbody>
             <tr><td><strong>FORA</strong></td><td>escrito por terceiro, com URL p&uacute;blica cit&aacute;vel</td><td><code>git ls-files</code> n&atilde;o acha, e a URL abre sem login</td></tr>
-            <tr><td><strong>GRANDE</strong></td><td>&ge; ~200&nbsp;KB (&asymp;50k tokens)</td><td><code>wc -c</code></td></tr>
+            <tr><td><strong>GRANDE</strong></td><td>&ge; 195&nbsp;KB (200.000 bytes, &asymp;50k tokens)</td><td><code>wc -c</code></td></tr>
             <tr><td><strong>REPETIDO</strong></td><td>&ge; 2 consultas <em>j&aacute; registradas</em></td><td><code>docs/base-externa.md</code></td></tr>
             <tr><td><strong>EST&Aacute;VEL</strong></td><td>nenhum commit nosso muda o conte&uacute;do</td><td>decorre de FORA; a validade cuida do resto</td></tr>
           </tbody>
@@ -1315,7 +1315,7 @@ node scripts/aceitacao.mjs --manter   <span class="c"># não apaga o projeto no 
       <h3>CLI, n&atilde;o MCP &mdash; e o n&uacute;mero que decidiu</h3>
 
       <div class="callout warn">
-        <p>Ligar o servidor MCP p&otilde;e <strong>38 ferramentas</strong> no system prompt de <em>toda</em> sess&atilde;o do projeto: <strong>~12.600 tokens medidos</strong>, contra ~928 do plugin inteiro do n&uacute;cleo. S&atilde;o <strong>13&times; o n&uacute;cleo</strong>, pagos em todo turno &mdash; inclusive nos que nunca tocam a base. Numa sess&atilde;o de 75 turnos, cerca de 947 mil tokens, 11% de toda a entrada.</p>
+        <p>Ligar o servidor MCP p&otilde;e <strong>38 ferramentas</strong> no system prompt de <em>toda</em> sess&atilde;o do projeto: <strong>12.629 tokens medidos</strong>, contra ~928 do plugin inteiro do n&uacute;cleo. S&atilde;o <strong>13,6&times; o n&uacute;cleo</strong>, pagos em todo turno &mdash; inclusive nos que nunca tocam a base. Numa sess&atilde;o de 75 turnos, cerca de 947 mil tokens, 11% de toda a entrada.</p>
         <p>A CLI faz o mesmo por <strong>zero</strong> always-on, e ainda deixa escolher <em>onde</em> a resposta longa aterrissa: dentro de um subagente, em vez de no contexto principal, onde seria reprocessada a cada turno.</p>
       </div>
 

@@ -67,6 +67,10 @@ um fornecedor, uma norma, o guia de migração de um framework:
 node $AGENT_CORE_ROOT/scripts/externa.mjs consultei <URL> "<o que precisava>"
 ```
 
+Se isso falhar com *Cannot find module*, a variável está defasada — ela vem de um
+arquivo que o Claude Code lê antes dos hooks, e o cache do plugin é versionado
+por diretório. O caminho certo aparece no início da sessão; use-o.
+
 Uma linha, e ela é o que faz a porta REPETIDO existir. Sem esse registro,
 "vale a pena indexar isto?" volta a ser palpite.
 
@@ -82,7 +86,7 @@ verificáveis por comando, nenhuma por opinião:
 | Porta | Exige | Verifica-se com |
 |---|---|---|
 | **FORA** | escrito por terceiro, com URL pública citável | `git ls-files` não acha, e a URL abre sem login |
-| **GRANDE** | ≥ ~200 KB (≈50k tokens) | `wc -c` |
+| **GRANDE** | ≥ 195 KB (200.000 bytes) | `wc -c` |
 | **REPETIDO** | ≥ 2 consultas **já registradas** | `docs/base-externa.md` |
 | **ESTÁVEL** | nenhum commit nosso muda o conteúdo | decorre de FORA |
 

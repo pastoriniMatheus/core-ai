@@ -3,8 +3,9 @@
 Estado em 16/09/2026, versão **0.6.0**. Nada aqui é bug conhecido: são coisas
 **nunca exercitadas** e decisões adiadas com motivo.
 
-O núcleo passa 168 testes de guarda, 19 de documentação e 19/19 na aceitação
-com sessões reais do Claude Code. Isso prova o que foi testado — não o que não
+O núcleo passa 209 testes de guarda, 22 de documentação e 17/17 na aceitação offline
+(as sessões reais foram exercitadas em 0.6.0; a rodada completa desta versão
+foi interrompida por falta de memória na máquina, e está pendente). Isso prova o que foi testado — não o que não
 foi, e esta página existe para que a diferença entre as duas coisas fique visível.
 
 ---
@@ -70,7 +71,7 @@ problema não medido é criar manutenção à toa.
 
 ### A base externa nunca falou com o Google
 
-Toda a camada 0 da base externa está testada — 33 casos, incluindo o portão, a
+Toda a camada 0 da base externa está testada — 66 casos, incluindo o portão, a
 autorização nomeada, o frescor e o que volta. **Mas nenhuma chamada real ao
 NotebookLM aconteceu**: não há sessão autenticada, porque autenticar exige um
 humano num navegador, e a conta tem de ser descartável.
@@ -87,6 +88,21 @@ O que isso deixa sem prova:
 **Como fechar:** criar a conta descartável, `notebooklm login`, `notebooklm auth
 check --test`, e então uma consulta real. Vinte minutos, e é o maior buraco
 desta versão.
+
+### Conferir a base contra o índice
+
+`docs/base-externa.md` é a única fonte de validade das fontes, e ele é escrito à
+mão pelo `registrar`. **Nada reconcilia os dois.** Se alguém subir uma fonte e
+esquecer de registrar, ela existe no NotebookLM e não existe para o núcleo:
+nunca vence, e não conta para o teto.
+
+O caminho oposto está fechado — índice sumido com a feature preparada agora
+**barra a consulta**, em vez de silenciosamente desligar a guarda. O que falta é
+o `externa.mjs conferir`: rodar `notebooklm source list`, comparar com o índice,
+e dizer o que está na base e fora do índice, e vice-versa.
+
+Não foi feito porque exige sessão autenticada para ser testado de verdade, e
+essa sessão não existe ainda.
 
 ### Deferimento de ferramentas MCP — a verificação que pode inverter uma decisão
 

@@ -41,6 +41,10 @@ const corePath = join(PROJETO, ".claude", "core.json");
 // resolvendo para uma pasta que nao existe, o que so aparece na instalacao por
 // plugin: o caminho principal, e o unico que ninguem testa antes de publicar.
 const NUCLEO = raizDoNucleo(import.meta.url);
+// O caminho deste proprio script, para as mensagens nao mandarem rodar
+// `$AGENT_CORE_ROOT` — variavel que fica uma versao atras depois de cada
+// atualizacao do plugin, e que nem existe no terminal do usuario.
+const SCRIPT = fileURLToPath(import.meta.url);
 if (!NUCLEO) { console.error("\n  nao achei o nucleo (hooks/hooks.json) a partir deste script\n"); process.exit(1); }
 const libUrl = (n) => pathToFileURL(join(NUCLEO, "hooks", "lib", n)).href;
 const { DEFAULTS } = await import(libUrl("config.mjs"));
@@ -78,14 +82,16 @@ function estado() {
   say(`  ${temCli ? c.ok + "[ok]" : c.dim + "[--]"}${c.off}  CLI notebooklm          ${c.dim}${temCli ? versaoCli() : "nao instalada"}${c.off}`);
 
   let auth = "nao verificada";
+  let autenticado = false;
   if (temCli) {
     // --passive: sondagem estritamente de leitura. Sem isso, um diagnostico
     // dispara rotacao de cookie — e um "check" que muda o estado que esta
     // checando e um check que mente na segunda vez.
     const r = roda("notebooklm", ["auth", "check", "--test", "--passive", "--json"], { timeout: 45000 });
-    auth = r.status === 0 ? `${c.ok}autenticada${c.off}` : `${c.warn}sem sessao valida${c.off}`;
+    autenticado = r.status === 0;
+    auth = autenticado ? `${c.ok}autenticada${c.off}` : `${c.warn}sem sessao valida${c.off}`;
   }
-  say(`  ${temCli ? "    " : "    "}  autenticacao            ${auth}`);
+  say(`        autenticacao            ${auth}`);
 
   const temStaging = existsSync(STAGING);
   say(`  ${temStaging ? c.ok + "[ok]" : c.dim + "[--]"}${c.off}  ${cfg.staging.padEnd(22)} ${c.dim}${temStaging ? "pasta de staging pronta" : "ausente — rode: preparar"}${c.off}`);
@@ -103,9 +109,23 @@ function estado() {
   const temDocker = temBin("docker");
   say(`  ${temDocker ? c.ok + "[ok]" : c.dim + "[--]"}${c.off}  docker                  ${c.dim}${temDocker ? "disponivel (servidor de teste)" : "ausente — modo local nao precisa"}${c.off}`);
 
+  // O proximo passo, e nao so o estado. Um diagnostico que diz "sem sessao
+  // valida" e para ai obriga quem le a ir procurar como resolver — e a maior
+  // parte das vezes essa procura termina em depurar container, que e o jeito
+  // mais comum de perder a tarde com esta ferramenta.
+  if (temCli && !autenticado) {
+    say(`\n  ${c.bold}Proximo passo — e ele e seu, nao do agente:${c.off}\n`);
+    say(`    ${c.bold}notebooklm login${c.off}        ${c.dim}abre um navegador de verdade${c.off}`);
+    say(`    ${c.bold}notebooklm auth check --test${c.off}   ${c.dim}se nao imprimir OK, pare aqui${c.off}\n`);
+    say(`  ${c.warn}Use uma conta Google descartavel e dedicada${c.off} ${c.dim}— sem Drive nem Gmail${c.off}`);
+    say(`  ${c.dim}corporativo, sem SSO da empresa. O arquivo de autenticacao que isso${c.off}`);
+    say(`  ${c.dim}cria e uma credencial de CONTA INTEIRA, duravel, e nao um token de${c.off}`);
+    say(`  ${c.dim}escopo limitado que se revoga sozinho.${c.off}`);
+  }
+
   say(`\n  ${c.dim}Cliente recomendado: a CLI, nao o MCP. As 38 ferramentas MCP do${c.off}`);
-  say(`  ${c.dim}notebooklm-py custam ~12.600 tokens de system prompt em TODA sessao —${c.off}`);
-  say(`  ${c.dim}13x o plugin inteiro do nucleo — e a CLI custa zero.${c.off}\n`);
+  say(`  ${c.dim}notebooklm-py custam 12.629 tokens de system prompt em TODA sessao —${c.off}`);
+  say(`  ${c.dim}13,6x o plugin inteiro do nucleo — e a CLI custa zero.${c.off}\n`);
 }
 
 function versaoCli() {
@@ -138,7 +158,10 @@ function preparar() {
   // e mesmo assim nada com esse nome pode ser commitado.
   const gi = join(PROJETO, ".gitignore");
   const atual = existsSync(gi) ? readFileSync(gi, "utf8") : "";
-  const querPor = ["master_token.json", ".notebooklm/", "*cookies*.json", "storage_state.json"];
+  // `browser_profile` e o user-data-dir do Chromium que a biblioteca cria:
+  // cookies vivos da sessao Google, num diretorio, nao num arquivo.
+  const querPor = ["master_token.json", ".notebooklm/", "*cookies*.json",
+                   "storage_state.json", "browser_profile/"];
   const faltam = querPor.filter((l) => !atual.split("\n").some((x) => x.trim() === l));
   if (faltam.length) {
     appendFileSync(gi,
@@ -200,7 +223,7 @@ reuso deixou de ser previsao e virou registro.
 
 Registre com:
 
-    node $AGENT_CORE_ROOT/scripts/externa.mjs consultei <URL> "<o que precisava>"
+    node <caminho-do-nucleo>/scripts/externa.mjs consultei <URL> "<o que precisava>"
 
 <!-- consultas -->
 
@@ -231,7 +254,17 @@ O portao bloqueia tudo isso sem escape. Se ele errou, o padrao esta em
 // ------------------------------------------------------------- consultei
 function consultei() {
   const origem = args[1];
-  const motivo = args.slice(2).filter((a) => !a.startsWith("--")).join(" ");
+  // Tira as flags E o valor delas. Sem isso a nota do indice ficava com o
+  // caminho do `--projeto` colado no fim — ruido permanente num arquivo
+  // versionado que existe para ser lido por gente.
+  const motivo = (() => {
+    const out = [];
+    for (let i = 2; i < args.length; i++) {
+      if (args[i].startsWith("--")) { if (!args[i].includes("=")) i++; continue; }
+      out.push(args[i]);
+    }
+    return out.join(" ");
+  })();
   if (!origem || !/^https?:\/\//i.test(origem)) morre("uso: consultei <URL> \"<o que precisava>\"");
   if (!existsSync(INDICE)) morre(`${cfg.indice} nao existe. Rode: node scripts/externa.mjs preparar`);
 
@@ -240,7 +273,22 @@ function consultei() {
   const marca = "<!-- consultas -->";
   if (!txt.includes(marca)) morre(`${cfg.indice} nao tem o marcador ${marca}`);
   const linha = `- ${hoje} — ${origem} — ${motivo || "(sem nota)"}`;
-  writeFileSync(INDICE, txt.replace(marca, `${marca}\n${linha}`));
+  // Insere no FIM das consultas, e nao logo depois do marcador.
+  //
+  // Duas pessoas registrando na mesma semana produziam duas insercoes na MESMA
+  // linha de um arquivo versionado — conflito de merge toda vez. E conflito
+  // aqui degrada em silencio: `lerIndice` pula o que nao casa o formato, e a
+  // fonte some do indice sem sumir da base. Linhas diferentes o git mescla
+  // sozinho.
+  const linhas = txt.split("\n");
+  const i = linhas.findIndex((l) => l.trim() === marca);
+  let fim = i;
+  for (let k = i + 1; k < linhas.length; k++) {
+    if (linhas[k].startsWith("#")) break;
+    if (linhas[k].trim().startsWith("- ")) fim = k;
+  }
+  linhas.splice(fim + 1, 0, linha);
+  writeFileSync(INDICE, linhas.join("\n"));
 
   const quantas = contaConsultas(origem);
   say(`\n  ${c.ok}registrado${c.off}  ${linha}`);
@@ -256,8 +304,14 @@ function consultei() {
 function contaConsultas(origem) {
   if (!existsSync(INDICE)) return 0;
   const alvo = origem.replace(/\/+$/, "").toLowerCase();
-  return readFileSync(INDICE, "utf8").split("\n")
-    .filter((l) => l.trim().startsWith("- ") && l.toLowerCase().includes(alvo)).length;
+  // Dedup: resolver um conflito de merge duplica linhas, e linha duplicada
+  // inflaria a porta REPETIDO — justamente a que autoriza o envio.
+  const vistas = new Set(
+    readFileSync(INDICE, "utf8").split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.startsWith("- ") && l.toLowerCase().includes(alvo))
+  );
+  return vistas.size;
 }
 
 // ---------------------------------------------------------------- enviar
@@ -315,8 +369,26 @@ function enviar() {
   // SEGREDO — a mesma checagem do portao, para o erro aparecer aqui e nao la
   let conteudo = "";
   try { conteudo = readFileSync(abs, "utf8").slice(0, 4 * 1024 * 1024); } catch { /* binario */ }
-  const achado = ext.achaSegredo(cfg, abs) || ext.achaSegredo(cfg, conteudo);
-  porta("LIMPO", !achado, achado ? `${achado.classe} (${achado.evidencia})` : "sem assinatura de segredo nem dado pessoal");
+  const achado = ext.achaSegredo(cfg, arquivo, "comando") || ext.achaSegredo(cfg, conteudo, "conteudo");
+  porta("LIMPO", !achado, achado ? `${achado.classe} (${achado.evidencia})` : "sem formato de credencial no conteudo");
+
+  // As heuristicas que o PORTAO nao aplica a conteudo de arquivo.
+  //
+  // CPF/CNPJ pontuado, sequencia que passa no Luhn, tres e-mails: num manual de
+  // terceiro isso e quase sempre exemplo — todo manual fiscal brasileiro tem
+  // CNPJ de exemplo, e uma em cada dez sequencias de 16 digitos passa no Luhn.
+  // Barrar sem escape mataria o caso de uso central.
+  //
+  // Mas ignorar em silencio seria pior. Entao o julgamento vem para ca, onde ha
+  // uma pessoa com o arquivo na frente — que e exatamente quem consegue
+  // distinguir "CNPJ de exemplo na pagina 40" de "planilha de clientes".
+  const heuristicas = ext.achaHeuristicas(cfg, conteudo);
+  if (heuristicas.length) {
+    say(`\n  ${c.warn}Olhe antes de mandar${c.off} — encontrei no conteudo:\n`);
+    for (const h of heuristicas) say(`    - ${h}`);
+    say(`\n  ${c.dim}Num manual de terceiro isso costuma ser exemplo. Se for dado real de${c.off}`);
+    say(`  ${c.dim}pessoa ou de cliente, NAO mande: nao ha como desfazer depois.${c.off}`);
+  }
 
   if (falhas.length) {
     say(`\n  ${c.erro}${falhas.length} porta(s) fechada(s). Nada foi autorizado.${c.off}`);
@@ -330,11 +402,11 @@ function enviar() {
 
   say(`\n  ${c.ok}As quatro portas passaram.${c.off}`);
   say(`  ${c.dim}autorizacao: ${p}${c.off}`);
-  say(`  ${c.dim}vale uma vez so, por ${Math.round(cfg.tokenWindowMs / 60000)} minutos, e NOMEIA este arquivo${c.off}\n`);
+  say(`  ${c.dim}vale ${Math.round(cfg.tokenWindowMs / 60000)} minutos, so para ESTE arquivo — se a chamada falhar, pode repetir${c.off}\n`);
   say(`  Agora, nesta janela:\n`);
   say(`    ${c.bold}notebooklm source add "${arquivo}"${c.off}\n`);
   say(`  E logo depois, para a fonte existir no indice:\n`);
-  say(`    ${c.bold}node $AGENT_CORE_ROOT/scripts/externa.mjs registrar "${arquivo}" --origem ${origem} --dias ${dias}${c.off}\n`);
+  say(`    ${c.bold}node "${SCRIPT}" registrar "${arquivo}" --origem ${origem} --dias ${dias}${c.off}\n`);
 }
 
 // ------------------------------------------------------------- registrar
@@ -356,12 +428,16 @@ function registrar() {
   const nome = flag("nome", basename(resolve(PROJETO, arquivo)));
   const linha = `| ${nome} | ${origem} | ${hoje.toISOString().slice(0, 10)} | ${vale} | ${contaConsultas(origem)} |`;
 
-  const txt = readFileSync(INDICE, "utf8");
-  const cab = "|---|---|---|---|---|";
-  const i = txt.indexOf(cab);
-  if (i === -1) morre(`${cfg.indice} nao tem a tabela de fontes`);
-  const corte = i + cab.length;
-  writeFileSync(INDICE, txt.slice(0, corte) + "\n" + linha + txt.slice(corte));
+  // No FIM da tabela, pelo mesmo motivo do `consultei`: insercao sempre na
+  // mesma linha e conflito de merge garantido em equipe, e conflito aqui
+  // degrada a guarda sem ruido nenhum.
+  const linhas = readFileSync(INDICE, "utf8").split("\n");
+  const cab = linhas.findIndex((l) => l.trim() === "|---|---|---|---|---|");
+  if (cab === -1) morre(`${cfg.indice} nao tem a tabela de fontes`);
+  let fim = cab;
+  for (let k = cab + 1; k < linhas.length && linhas[k].trim().startsWith("|"); k++) fim = k;
+  linhas.splice(fim + 1, 0, linha);
+  writeFileSync(INDICE, linhas.join("\n"));
 
   say(`\n  ${c.ok}registrado${c.off}  ${linha}`);
   say(`  ${c.dim}vence em ${vale} — a partir dai a CONSULTA e barrada ate alguem reenviar ou podar${c.off}\n`);
@@ -489,25 +565,52 @@ const COMPOSE = `services:
     ports:
       - "127.0.0.1:9420:9420"
     environment:
-      # Sem valor aqui: o bearer vem do ambiente de quem sobe o container.
-      # Passar "-e TOKEN=<valor>" literal o deixaria visivel em \`docker inspect\`,
-      # em \`ps\` e no historico do shell.
+      # O bearer vem do ambiente de quem sobe o container, e nao escrito aqui:
+      # isso o mantem fora do arquivo versionavel e fora do historico do shell.
+      #
+      # Mas nao o esconde do \`docker inspect\`: variavel de ambiente de container
+      # aparece la, e tambem em \`docker compose config\`. A biblioteca nao oferece
+      # NOTEBOOKLM_MCP_TOKEN_FILE, entao nao ha como fazer melhor hoje — e dizer
+      # o contrario seria pior do que a exposicao, porque alguem confiaria nela.
+      #
+      # Consequencia pratica: este bearer e por maquina e descartavel. Trate-o
+      # como tal, e nunca reaproveite senha de outra coisa.
       NOTEBOOKLM_MCP_TOKEN: \${NOTEBOOKLM_MCP_TOKEN:?defina NOTEBOOKLM_MCP_TOKEN}
     volumes:
-      # rw, e nao ro, de proposito: o master token se re-minta sozinho e precisa
-      # reescrever o arquivo. Montado somente-leitura, a sessao morre em ~10min
-      # e o sintoma chega como erro generico do Google.
       # Sem default: "~" NAO expande em compose, e o bind criaria uma pasta
       # chamada "~" — vazia, e o servidor culparia a autenticacao. Quem sobe
       # pelo script recebe o caminho ja resolvido.
-      - \${NOTEBOOKLM_AUTH_DIR:?defina NOTEBOOKLM_AUTH_DIR (use: node scripts/externa.mjs servidor subir)}:/data/auth:rw
+      # Sintaxe LONGA, e nao "origem:destino:rw".
+      #
+      # A curta divide por ":", e um caminho do Windows comeca com "C:" — o
+      # compose lia "C" como origem e o resto como destino, e recusava o arquivo
+      # inteiro com "missing a mount target". Medido nesta maquina. A sintaxe
+      # longa nao divide nada, entao funciona igual nos dois sistemas.
+      - type: bind
+        source: \${NOTEBOOKLM_AUTH_DIR:?rode: node scripts/externa.mjs servidor subir}
+        target: /data/auth
+        # rw, e nao ro, de proposito: o master token se re-minta sozinho e
+        # precisa reescrever o arquivo. Montado somente-leitura, a sessao morre
+        # em ~10min e o sintoma chega como erro generico do Google.
+        read_only: false
     # on-failure com teto, e NAO unless-stopped. Com reinicio infinito, um
     # servidor que morre no arranque por falta de sessao aparece como "Up" e
     # fica em laco invisivel — medido aqui: 5 reinicios sem um sinal apontando
     # para a causa. Com teto, ele para morto e visivel, que e o que se quer.
     restart: on-failure:3
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:9420/', timeout=5).status < 500 else 1)"]
+      # Conexao TCP, e nao HTTP.
+      #
+      # A versao anterior usava urlopen e NUNCA passaria: com bearer exigido, o
+      # servidor responde 401, e urlopen LANCA HTTPError em 401 em vez de
+      # retornar (verificado). O healthcheck ficava permanentemente unhealthy
+      # num servidor perfeitamente saudavel — e um sinal de saude que mente
+      # ensina o time a ignorar o sinal.
+      #
+      # Aceitar conexao ja prova o que este check precisa provar: o processo
+      # subiu e esta escutando. Se a sessao do Google morreu, quem diz isso e
+      # o comando de diagnostico da CLI, nao o Docker.
+      test: ["CMD", "python", "-c", "import socket,sys; s=socket.create_connection(('127.0.0.1',9420),5); s.close()"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -552,7 +655,7 @@ intermitente, 1 em 5 chamadas, sem padrao.
 ## E o custo de ligar o MCP
 
 Um servidor MCP conectado poe as 38 ferramentas no system prompt de **toda**
-sessao do projeto: ~12.600 tokens, 13x o plugin inteiro do nucleo, pagos em
+sessao do projeto: 12.629 tokens, 13,6x o plugin inteiro do nucleo, pagos em
 todo turno inclusive nos que nunca tocam a base. Por isso o cliente recomendado
 e a CLI, e este servidor e **de teste** — ele prova o caminho, mede o custo, e
 so vira producao se a tabela de metricas do ROADMAP mostrar demanda.

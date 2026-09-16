@@ -151,6 +151,32 @@ console.log("\n=== o plugin carrega os scripts que seus comandos chamam ===");
     foraDaConvencao.length ? `fora da convencao: ${foraDaConvencao.join(", ")}` : "");
 }
 
+console.log("\n=== os scripts funcionam nos DOIS layouts ===");
+// A instalacao por plugin e o caminho principal — e o menos exercitado, porque
+// quem desenvolve roda sempre do repositorio. Os dois layouts tem profundidade
+// diferente, e um caminho relativo que acerta num erra no outro EM SILENCIO.
+//
+// Ja custou duas vezes: os comandos com {{CORE_ROOT}} por resolver, e o doctor
+// exigindo um marketplace.json que so existe no repositorio — erro duro,
+// permanente e inevitavel justamente no caminho que o README manda usar.
+{
+  const alvo = join(ROOT, "tests");
+  for (const [layout, script] of [
+    ["repositorio", join(ROOT, "scripts", "doctor.mjs")],
+    ["plugin", join(ROOT, "plugins", "core", "scripts", "doctor.mjs")],
+  ]) {
+    const r = spawnSync(process.execPath, [script, alvo], { encoding: "utf8", timeout: 60000 });
+    const linhaErro = (r.stdout || "").split("\n").find((l) => l.includes("[erro]")) || "";
+    afirma(`doctor roda sem erro no layout ${layout}`, r.status === 0, linhaErro.trim());
+  }
+
+  const r = spawnSync(process.execPath,
+    [join(ROOT, "plugins", "core", "scripts", "externa.mjs"), "estado", "--projeto", alvo],
+    { encoding: "utf8", timeout: 90000 });
+  afirma("externa.mjs acha o nucleo a partir do plugin", r.status === 0,
+    (r.stderr || "").split("\n")[1] || "");
+}
+
 console.log("\n=== versões coerentes ===");
 
 // A versão é o único sinal que `claude plugin update` usa. Se os dois arquivos

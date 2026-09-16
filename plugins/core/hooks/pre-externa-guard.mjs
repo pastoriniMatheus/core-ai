@@ -20,12 +20,14 @@
 // MCP assim mesmo continua passando por aqui: ter um caminho coberto e outro
 // aberto foi o erro recorrente deste projeto seis vezes.
 
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, statSync, openSync, readSync, closeSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { run, pass, denyTool } from "./lib/io.mjs";
 import { loadConfig } from "./lib/config.mjs";
 import { dirEstado } from "./lib/estado.mjs";
 import {
-  classifica, tipoDaAcao, achaSegredo, caminhosCitados,
+  bate, classifica, tipoDoComando, achaSegredo, caminhosCitados,
   rastreado, dentroDoStaging, lerIndice, consomeAutorizacao,
 } from "./lib/externa.mjs";
 
@@ -33,7 +35,38 @@ import {
 // assinatura de segredo, que aparece no comeco em praticamente todo formato de
 // credencial. Ler 2MB de um PDF de 300 paginas gastaria o orcamento sem
 // acrescentar nada.
-const TETO_LEITURA = 2 * 1024 * 1024;
+const TETO_LEITURA = 512 * 1024;
+
+// O caminho do proprio nucleo, resolvido em tempo de execucao.
+//
+// As mensagens de bloqueio mandavam rodar `$AGENT_CORE_ROOT/scripts/...`. Essa
+// variavel vem do settings.local.json, que o Claude Code le ANTES dos hooks — e
+// o cache do plugin e versionado por diretorio. Medido nesta maquina: variavel
+// apontando para `core/0.5.0` com `0.5.1` instalado, e nenhuma das duas pastas
+// contendo o script citado. A mensagem do portao levava a "Cannot find module".
+//
+// Fora do Claude Code — no terminal do usuario, que e para onde esta mensagem
+// manda ir — a variavel nem existe.
+//
+// O hook sabe onde mora. Entao ele diz o caminho, em vez de delegar.
+const NUCLEO = dirname(dirname(fileURLToPath(import.meta.url))).split("\\").join("/");
+
+/**
+ * O arquivo e binario?
+ *
+ * Ler um PDF como utf8 produz lixo, e lixo casa padrao: medido, 7 de 15 PDFs
+ * reais eram barrados — 6 deles por um "numero de cartao" que nao existia,
+ * porque bytes aleatorios passam no Luhn uma vez em dez. Bloqueio sem escape
+ * disparando em PDF e a morte da feature, cujo material-alvo E PDF.
+ *
+ * Byte zero no primeiro bloco e o teste que o proprio `git` usa. Binario nao e
+ * varrido aqui; quem varre e `externa.mjs enviar`, com a pessoa olhando.
+ */
+function ehBinario(buf) {
+  const n = Math.min(buf.length, 8000);
+  for (let i = 0; i < n; i++) if (buf[i] === 0) return true;
+  return false;
+}
 
 function conteudoDosArquivos(caminhos, cwd) {
   const partes = [];
@@ -41,8 +74,17 @@ function conteudoDosArquivos(caminhos, cwd) {
     try {
       const p = c.startsWith(".") || !/^([A-Za-z]:|\/)/.test(c) ? `${cwd}/${c}` : c;
       if (!existsSync(p) || !statSync(p).isFile()) continue;
-      partes.push(readFileSync(p, { encoding: "utf8" }).slice(0, TETO_LEITURA));
-    } catch { /* binario ou sem permissao: o nome do arquivo ja foi checado */ }
+      // Le so o teto, e nao o arquivo inteiro para cortar depois: um PDF de
+      // 300 paginas vinha para a memoria antes do slice. Assinatura de
+      // credencial aparece no comeco em praticamente todo formato.
+      const fd = openSync(p, "r");
+      const buf = Buffer.alloc(TETO_LEITURA);
+      const lidos = readSync(fd, buf, 0, TETO_LEITURA, 0);
+      closeSync(fd);
+      const bloco = buf.subarray(0, lidos);
+      if (ehBinario(bloco)) continue;
+      partes.push(bloco.toString("utf8"));
+    } catch { /* sem permissao: o NOME do arquivo ja foi checado */ }
   }
   return partes.join("\n");
 }
@@ -51,11 +93,55 @@ run(async (input) => {
   const cfg = loadConfig(input.cwd).externa;
   if (!cfg?.enabled) pass();
 
+  // ------------------------------------------- 0b. o comando do usuario
+  // `externa.mjs enviar` e quem emite a autorizacao de envio. Se o agente o
+  // rodar, ele assina a propria licenca — e as quatro portas continuam
+  // existindo sem significar nada. Mesma correcao que `publish.sempreTracker`
+  // ja exigiu: a ferramenta do nucleo nao pode contornar a guarda do nucleo.
+  if (bate(cfg.sempreUsuario, input.tool_input?.command || "")) {
+    denyTool(
+      `[core] \`externa.mjs enviar\` e um comando do usuario, nao seu.\n\n` +
+        `Ele e quem EMITE a autorizacao de envio depois de checar as quatro\n` +
+        `portas. Rodando por voce, o agente autoriza o proprio envio — e as\n` +
+        `portas viram enfeite.\n\n` +
+        `O que voce faz e PROPOR: diga a origem, o tamanho, as consultas ja\n` +
+        `registradas e a validade sugerida, e pare. Quem executa e ele — no\n` +
+        `terminal dele, ou com o prefixo \`!\` nesta sessao.`
+    );
+  }
+
+
   const chamada = classifica(cfg, input.tool_name, input.tool_input);
   if (!chamada) pass(); // nao fala com a base externa: nao e assunto deste hook
 
-  const { via, acao, texto } = chamada;
-  const tipo = tipoDaAcao(cfg, acao);
+  const { via, acoes, texto } = chamada;
+
+  // ------------------------------------------- 0. rota indireta
+  // Chegar na base por um interpretador (`python -c "import notebooklm"`) ou
+  // por HTTP no servidor local (`curl 127.0.0.1:9420/mcp`) executa a mesma acao
+  // sem que o portao consiga ler QUAL acao e. Classificar um corpo JSON
+  // arbitrario com confianca nao da; entao a resposta nao e "deixa passar
+  // porque nao entendi", e sim "nao passa por aqui".
+  //
+  // Sem isto, o portao inteiro teria um desvio de uma linha — e um desvio de
+  // uma linha e o que este projeto ja construiu, sem querer, seis vezes.
+  if (via === "indireta") {
+    denyTool(
+      `[core] Rota indireta para a base externa: \`${texto.slice(0, 100)}\`\n\n` +
+        `O portao so pode autorizar o que consegue ler. Um interpretador chamando\n` +
+        `a biblioteca, ou um HTTP direto no servidor local, executam a mesma acao\n` +
+        `sem que daqui se enxergue QUAL acao e — inclusive as que nao tem escape:\n` +
+        `compartilhar, apagar, e gerar conteudo de modelo dentro da base.\n\n` +
+        `Use a CLI, que e o caminho que o portao le:\n\n` +
+        `    notebooklm ask "<pergunta>"        consultar\n` +
+        `    notebooklm source list             ver o que esta na base\n\n` +
+        `Para enviar, o caminho e o humano:
+
+    node ${NUCLEO}/scripts/externa.mjs enviar <arquivo>`
+    );
+  }
+
+  const { tipo, acao } = tipoDoComando(cfg, acoes);
 
   // ------------------------------------------- 1. proibido, sem escape
   // Compartilhar torna publico material que pode ser interno. Apagar destroi
@@ -81,7 +167,8 @@ run(async (input) => {
   // A checagem olha o comando E o conteudo dos arquivos citados nele.
   const caminhos = caminhosCitados(texto);
   const achado =
-    achaSegredo(cfg, texto) || achaSegredo(cfg, conteudoDosArquivos(caminhos, input.cwd));
+    achaSegredo(cfg, texto, "comando") ||
+    achaSegredo(cfg, conteudoDosArquivos(caminhos, input.cwd), "conteudo");
   if (achado) {
     denyTool(
       `[core] Isto nao sai da maquina: ${achado.classe}.\n\n` +
@@ -104,6 +191,38 @@ run(async (input) => {
     const perguntando = /^(ask|suggest-|chat_ask|chat_start)/i.test(acao);
     if (perguntando) {
       const idx = lerIndice(input.cwd, cfg);
+
+      // Indice ausente com a feature JA preparada: falha FECHADO.
+      //
+      // `lerIndice` devolve `{existe:false, fontes:[], vencidas:[]}` — que nao e
+      // excecao, e retorno normal. Entao `aoFalhar:"bloqueia"` nao alcanca:
+      // `vencidas.length` vira 0 para sempre, nenhuma consulta e barrada, e o
+      // teto de fontes e pulado. A promessa central ("fonte vencida barra a
+      // consulta") deixa de valer sem que nada acuse.
+      //
+      // Basta alguem reorganizar `docs/` na segunda semana. Por isso: se a
+      // pasta de staging existe, a feature foi preparada, e um indice sumido e
+      // uma guarda desligada — nao um projeto que nunca usou a base.
+      const preparada = existsSync(join(input.cwd, cfg.staging));
+      if (preparada && !idx.existe) {
+        denyTool(
+          `[core] A base externa esta preparada, mas \`${cfg.indice}\` sumiu.\n\n` +
+            `Esse arquivo e a UNICA fonte de validade das fontes. Sem ele, nenhuma\n` +
+            `fonte vence nunca e o teto de curadoria deixa de existir — a guarda para\n` +
+            `de valer sem nada acusar, que e o pior estado possivel.\n\n` +
+            `Recrie o indice e registre o que ja esta na base:\n\n` +
+            `    node ${NUCLEO}/scripts/externa.mjs preparar\n` +
+            `    notebooklm source list\n`
+        );
+      }
+      if (idx.quebrado) {
+        denyTool(
+          `[core] \`${cfg.indice}\` tem marcador de conflito de merge.\n\n` +
+            `Nesse estado as linhas nao sao lidas, e uma fonte que sumiu do indice\n` +
+            `continua na base sem nunca vencer. Resolva o conflito antes de consultar.`
+        );
+      }
+
       if (idx.vencidas.length) {
         const lista = idx.vencidas.slice(0, 6).map((f) => `    - ${f.nome}  (venceu em ${f.vale})`).join("\n");
         denyTool(
@@ -187,7 +306,7 @@ run(async (input) => {
       `Falhou uma porta, nao sobe — sem nota de corte e sem "mas e importante".\n\n` +
       `Se as quatro passam, PROPONHA ao usuario (origem, tamanho, as duas consultas\n` +
       `que ja aconteceram, validade sugerida) e PARE. Quem executa e ele:\n\n` +
-      `    node $AGENT_CORE_ROOT/scripts/externa.mjs enviar <arquivo em ${cfg.staging}>\n\n` +
+      `    node ${NUCLEO}/scripts/externa.mjs enviar <arquivo em ${cfg.staging}>\n\n` +
       `Esse comando roda as portas de novo como comandos e so entao emite a\n` +
       `autorizacao — que vale uma vez, por poucos minutos, e nomeia o arquivo.`
   );

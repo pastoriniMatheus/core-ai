@@ -75,8 +75,23 @@ for (const arquivo of (() => { try { return readdirSync(dirLib).filter((f) => f.
   if (r.status !== 0) ERR(`lib/${arquivo} tem erro de sintaxe`, r.stderr?.split("\n")[0]);
 }
 
-const mk = readJson(join(ROOT, ".claude-plugin", "marketplace.json"));
-mk ? OK("marketplace.json valido", `${mk.plugins?.length || 0} plugin(s)`) : ERR("marketplace.json ausente ou malformado");
+// O marketplace.json pertence ao REPOSITORIO que publica o plugin, nao ao
+// plugin instalado. Rodando de dentro de `<plugin>/scripts/`, ele nao existe —
+// e nao deveria existir.
+//
+// Sem esta distincao, o diagnostico acusava um ERRO DURO (exit 1) em toda
+// instalacao por plugin, que e o caminho principal e o que o README manda usar.
+// Erro permanente e inevitavel no caminho principal ensina o time a ignorar
+// vermelho; dai o vermelho que importa tambem passa batido.
+const noRepositorio = existsSync(join(ROOT, ".claude-plugin", "marketplace.json")) ||
+  existsSync(join(ROOT, "plugins", "core", "hooks", "hooks.json"));
+if (noRepositorio) {
+  const mk = readJson(join(ROOT, ".claude-plugin", "marketplace.json"));
+  mk ? OK("marketplace.json valido", `${mk.plugins?.length || 0} plugin(s)`)
+     : ERR("marketplace.json ausente ou malformado");
+} else {
+  OK("rodando da instalacao por plugin", "marketplace.json vive no repositorio que publica, nao aqui");
+}
 
 // ------------------------------------------------------------- no projeto
 console.log("\nConfiguracao do projeto");
@@ -273,7 +288,12 @@ if (temBin("notebooklm")) {
     const { DEFAULTS } = await import(
       pathToFileURL(join(NUCLEO, "hooks", "lib", "config.mjs")).href
     );
-    const idx = lerIndice(PROJECT, DEFAULTS.externa);
+    // A configuracao DO PROJETO, e nao os defaults: um time que moveu o indice
+    // (`externa.indice`) via o diagnostico procurar no caminho errado e dizer
+    // "nao preparada" num projeto perfeitamente configurado. Diagnostico que
+    // mente sobre uma configuracao boa custa mais caro que a ausencia dele.
+    const doProjeto = readJson(join(PROJECT, ".claude", "core.json"))?.externa || {};
+    const idx = lerIndice(PROJECT, { ...DEFAULTS.externa, ...doProjeto });
     if (!idx.existe) {
       console.log("  [--]    base externa nao preparada   /core-externa");
     } else if (idx.vencidas.length) {

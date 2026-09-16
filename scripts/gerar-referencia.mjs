@@ -56,12 +56,21 @@ function comentarioDe(chave, nivel, dentroDe = null) {
   return bloco || (emLinha ? emLinha[1].trim() : "");
 }
 
+let chaveAtual = "";
 const valor = (v) => {
   if (Array.isArray(v)) return v.length ? `${v.length} padrão(ões)` : "`[]` vazio";
   if (v === null) return "`null`";
   if (typeof v === "object") return "";
+  // A unidade vem do NOME da opcao, nao do tamanho do numero. A versao anterior
+  // tratava todo valor acima de mil como milissegundos, e publicava o teto de
+  // resposta como `4000` (4s) — numa referencia cujo proposito declarado e nao
+  // envelhecer, uma unidade errada e pior que a ausencia dela.
   if (typeof v === "number" && v > 1000) {
-    return v >= 3600000 ? `\`${v}\` (${Math.round(v / 3600000)}h)` : `\`${v}\` (${Math.round(v / 1000)}s)`;
+    if (/Ms$/.test(chaveAtual)) {
+      return v >= 3600000 ? `\`${v}\` (${Math.round(v / 3600000)}h)` : `\`${v}\` (${Math.round(v / 1000)}s)`;
+    }
+    if (/Bytes$/.test(chaveAtual)) return `\`${v}\` (${Math.round(v / 1024)} KB)`;
+    return `\`${v}\``;
   }
   return `\`${JSON.stringify(v)}\``;
 };
@@ -99,6 +108,7 @@ for (const [secao, opcoes] of Object.entries(DEFAULTS)) {
   out.push("|---|---|---|");
   for (const [chave, v] of Object.entries(opcoes)) {
     if (chave.startsWith("//")) continue;
+    chaveAtual = chave;
     const desc = comentarioDe(chave, 4, secao) || "—";
     out.push(`| \`${chave}\` | ${valor(v) || "objeto"} | ${desc} |`);
   }

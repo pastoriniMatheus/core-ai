@@ -134,13 +134,40 @@ export const DEFAULTS = {
     // A CLI, e nao o MCP, e o cliente recomendado: as 38 ferramentas MCP do
     // notebooklm-py medem 12.629 tokens de system prompt em TODA sessao —
     // 13,6x o plugin inteiro do nucleo (~928) — enquanto a CLI custa zero.
-    binarios: ["(^| |/|[\\\\])notebooklm(-mcp)?([.](exe|cmd|bat))?( |$)"],
+    binarios: ["(^| |/|[\\\\])notebooklm(-mcp|-server)?([.](exe|cmd|bat))?( |$)"],
 
     // Se alguem ligar o MCP assim mesmo, o portao continua valendo. Casado
     // contra o NOME DO SERVIDOR (`mcp__notebooklm__chat_ask` -> `notebooklm`),
     // nunca contra a acao: um servidor chamado "notes" nao vira base externa
     // por ter ferramenta de nome parecido.
     servidores: ["^(notebooklm|nblm|notebook[_-]?lm)"],
+
+    // As rotas que chegam na base SEM passar pela CLI nem pelo MCP.
+    //
+    // Este projeto ja errou seis vezes do mesmo jeito: um caminho coberto e
+    // outro aberto. Bash coberto, MCP aberto. Edit coberto, escrita por shell
+    // aberta. curl ao tracker coberto, o proprio script do nucleo aberto.
+    //
+    // Aqui os caminhos sao tres, e nenhum passa pelos `binarios`:
+    //   - um interpretador importando a biblioteca (`python -c "import
+    //     notebooklm..."`, `uv run --with notebooklm-py ...`)
+    //   - HTTP direto ao servidor local, se o time levantou o container: um
+    //     `curl 127.0.0.1:9420/mcp` executa a ferramenta sem o portao ver nada
+    //   - HTTP direto ao proprio notebooklm.google.com
+    //
+    // Rota indireta NAO e classificada: e negada, e a mensagem manda usar a CLI.
+    // Isso e deliberado — o portao so pode autorizar o que consegue ler, e nao
+    // ha como ler uma acao dentro de um corpo JSON arbitrario com confianca.
+    //
+    // A porta 9420 e a default do notebooklm-mcp. Servidor em outra porta:
+    // acrescente o padrao aqui, no core.json do projeto.
+    rotasIndiretas: [
+      // Instalar NAO e usar. `uv tool install "notebooklm-py[browser]"` e o que
+      // o /core-ferramentas roda, e barra-lo quebrava a propria instalacao da
+      // ferramenta que esta feature existe para usar.
+      "(^| )(python3?|py|uv|uvx|pipx|poetry|pdm|hatch|conda)( |$)(?![^|;&]*(install|add|sync|lock|remove|uninstall|pip))[^|;&]*notebooklm",
+      "(^| )(curl|wget|http|httpie|Invoke-RestMethod|Invoke-WebRequest|iwr)( |$)[^|;&]*(:9420|notebooklm[.]google[.]com)",
+    ],
 
     // Consultar nao exporta arquivo nenhum: passa livre.
     //
@@ -158,6 +185,12 @@ export const DEFAULTS = {
       "^research +(status|wait)( |$)",
       "^(profile +list|language +(get|list)|agent +show|skill +(list|show|status))( |$)",
       "^auth +(check|inspect)( |$)",
+      // `login` abre o navegador para o USUARIO autenticar: nao exporta nada
+      // do projeto. Barra-lo seria barrar o primeiro passo que o proprio
+      // diagnostico do nucleo manda dar — guarda que impede a configuracao e
+      // guarda que alguem desliga. `__ajuda` e `notebooklm --version`.
+      "^login( |$)",
+      "^__ajuda$",
       "^(chat_ask|chat_start|chat_status|chat_cancel|suggest_prompts)$",
       "^(notebook_list|notebook_describe|server_info|share_status|research_status)$",
       "^(source_list|source_read|source_wait|source_list_play_books|studio_list|studio_status)$",
@@ -189,6 +222,20 @@ export const DEFAULTS = {
       "^(notebook|source|studio)_delete$",
       "^(note_save|studio_generate|research_start|research_import)$",
     ],
+
+    // O proprio script do nucleo TEM de passar pelo portao.
+    //
+    // `externa.mjs enviar` e quem EMITE a autorizacao de envio, depois de checar
+    // as quatro portas. Se o agente puder roda-lo, ele assina a propria licenca:
+    // roda `consultei` duas vezes para abrir a porta REPETIDO, roda `enviar
+    // --sem-rede` para pular a checagem de URL publica, e sai com um token
+    // valido. As portas continuam existindo e deixam de significar alguma coisa.
+    //
+    // E exatamente a falha que o `publish.sempreTracker` ja corrigiu uma vez:
+    // uma ferramenta que contorna a propria guarda e o jeito mais facil de furar
+    // o sistema inteiro. Sempre ativo, sem escape — o usuario roda no terminal
+    // dele, ou com o prefixo `!` na sessao.
+    sempreUsuario: ["externa[.]mjs[^|;&]* enviar( |$)"],
 
     // Onde o material a enviar precisa estar antes de subir.
     //
@@ -251,12 +298,20 @@ export const DEFAULTS = {
     segredoConteudo: [
       "-----BEGIN [A-Z ]*PRIVATE KEY",
       "AKIA[0-9A-Z]{16}",
-      "(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}",
+      "(^|[^A-Za-z0-9])(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}",
       "github_pat_[A-Za-z0-9_]{20,}",
       "xox[baprs]-[A-Za-z0-9-]{10,}",
-      "sk-[A-Za-z0-9_-]{20,}",
+      // A fronteira da esquerda nao e enfeite: sem ela, `sk-` casava dentro de
+      // palavra inglesa comum — `risk-assessment-methodology`,
+      // `task-management-system`, `disk-usage-monitoring`. Tres bloqueios SEM
+      // ESCAPE em nomes de arquivo perfeitamente normais.
+      "(^|[^A-Za-z0-9])sk-(proj-|svcacct-|admin-)?[A-Za-z0-9]{20,}",
       "AIza[0-9A-Za-z_-]{35}",
-      "(client_secret|api[_-]?secret)[^A-Za-z0-9]{1,4}[A-Za-z0-9_-]{12,}",
+      // Exige valor longo E com digito. Documentacao de terceiro mostra
+      // `client_secret: <sua-chave-aqui>` o tempo todo, e isso e o caso de uso
+      // central desta feature — barrar sem escape um manual por ele explicar o
+      // proprio formato seria absurdo.
+      "(client_secret|api[_-]?secret)[^A-Za-z0-9]{1,4}(?=[A-Za-z0-9_-]*[0-9])[A-Za-z0-9_-]{24,}",
       "(postgres|postgresql|mysql|mongodb|redis|amqp)([+][a-z]+)?://[^ :@]+:[^ @]+@",
     ],
 
@@ -391,13 +446,55 @@ export const DEFAULTS = {
   },
 };
 
-function deepMerge(base, override) {
+/**
+ * Listas que um projeto pode ESTENDER, mas nunca encurtar.
+ *
+ * Toda outra opcao continua sendo substituida pelo projeto — e assim tem de
+ * ser: um time precisa poder trocar `testPatterns` pelo comando de teste dele.
+ *
+ * Estas nao. Sao as listas cujo encolhimento apaga um bloqueio SEM ESCAPE, e
+ * apaga em silencio: `{"externa": {"proibidas": ["^share_set_access$"]}}` num
+ * core.json parece estar acrescentando uma proibicao e na verdade remove todas
+ * as outras — some `share public`, somem os `delete`, some o `generate`. O
+ * arquivo fica com cara de mais rigoroso e o sistema fica mais permissivo, que
+ * e a pior combinacao possivel.
+ *
+ * O mesmo vale ao contrario para `consulta`: substituir a lista faz TODA
+ * consulta virar envio, e ai o portao barra a ferramenta inteira.
+ */
+const SOMENTE_ACRESCENTA = new Set([
+  "externa.proibidas", "externa.consulta", "externa.segredoCaminhos",
+  "externa.segredoConteudo", "externa.piiPatterns", "externa.binarios",
+  "externa.rotasIndiretas", "externa.servidores", "externa.sempreUsuario",
+  "publish.forbiddenStates", "publish.sempreTracker",
+]);
+
+function deepMerge(base, override, caminho = "") {
   if (!override || typeof override !== "object") return base;
   const out = Array.isArray(base) ? [...base] : { ...base };
   for (const [k, v] of Object.entries(override)) {
+    const aqui = caminho ? `${caminho}.${k}` : k;
+
+    // Onde o default e uma LISTA, `null` nao e um valor: e um engano.
+    //
+    // O core.json e escrito a mao, e `"testPatterns": null` — para "desligar"
+    // — atravessava o merge e virava o valor efetivo. O primeiro hook a fazer
+    // `cfg.testPatterns.some(...)` lancava TypeError, e como as guardas rodam
+    // com `aoFalhar: "bloqueia"`, o engano de digitacao virava BLOQUEIO DE
+    // TUDO, com uma mensagem que nao apontava para o core.json.
+    //
+    // Achado por uma sessao real do Claude Code, e nao pelos testes: os testes
+    // escreviam core.json bem-formado. Lista vazia continua valendo — `[]` diz
+    // "nenhum padrao" de propria vontade; `null` nunca quis dizer nada.
+    if (v == null && Array.isArray(base?.[k])) continue;
+
+    if (Array.isArray(v) && Array.isArray(base?.[k]) && SOMENTE_ACRESCENTA.has(aqui)) {
+      out[k] = [...new Set([...base[k], ...v])];
+      continue;
+    }
     out[k] =
       v && typeof v === "object" && !Array.isArray(v) && base?.[k] && typeof base[k] === "object"
-        ? deepMerge(base[k], v)
+        ? deepMerge(base[k], v, aqui)
         : v;
   }
   return out;

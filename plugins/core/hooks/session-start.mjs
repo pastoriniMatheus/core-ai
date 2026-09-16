@@ -47,15 +47,26 @@ function publicaRaiz(cwd) {
   const p = join(cwd, ".claude", "settings.local.json");
   let j = {};
   try { j = JSON.parse(readFileSync(p, "utf8")); } catch { /* arquivo novo */ }
-  if (j.env?.AGENT_CORE_ROOT === nucleo) return; // ja em dia: nao reescreve
+  const gravado = j.env?.AGENT_CORE_ROOT;
+  if (gravado === nucleo) return { nucleo, defasado: false };
   j.env = { ...(j.env || {}), AGENT_CORE_ROOT: nucleo };
   mkdirSync(join(cwd, ".claude"), { recursive: true });
   writeFileSync(p, JSON.stringify(j, null, 2) + "\n");
+  // Escrever aqui NAO conserta esta sessao: o Claude Code ja leu o
+  // settings.local.json antes de o hook rodar, entao o valor novo so vale a
+  // partir da proxima. E o cache do plugin e versionado por diretorio
+  // (core/0.5.0, core/0.6.0...), entao depois de um `plugin update` a variavel
+  // aponta para a pasta da versao ANTERIOR — que pode nem conter o script que
+  // o comando manda rodar. Medido: variavel em 0.5.0 com 0.5.1 instalado.
+  //
+  // Por isso quem estava defasado precisa saber AGORA, em contexto.
+  return { nucleo, defasado: true, gravado };
 }
 
 function main(input) {
   const cwd = input.cwd || process.cwd();
-  try { publicaRaiz(cwd); } catch { /* sem permissao de escrita: segue */ }
+  let raiz = null;
+  try { raiz = publicaRaiz(cwd); } catch { /* sem permissao de escrita: segue */ }
   const cfgPath = join(cwd, ".claude", "core.json");
   const pendencias = [];
   const cfg = loadConfig(cwd);
@@ -86,7 +97,32 @@ function main(input) {
     pendencias.push("`CLAUDE.md` ainda tem os placeholders `<comando>` do template");
   }
 
-  if (!pendencias.length && !retomada) return;
+  // O caminho do nucleo, quando a variavel de ambiente ainda nao o reflete.
+  //
+  // `$AGENT_CORE_ROOT` e como todo comando deste plugin aponta para os scripts.
+  // Ela vem do `settings.local.json`, que o Claude Code le ANTES de os hooks
+  // rodarem — e o cache do plugin e versionado por diretorio. Entao na primeira
+  // sessao depois de uma atualizacao ela aponta para a pasta da versao
+  // anterior, o comando falha com "Cannot find module", e o motivo nao aparece
+  // em lugar nenhum.
+  //
+  // Dizer o caminho certo aqui resolve sem esperar a proxima sessao: o agente
+  // le daqui, em vez da variavel.
+  const avisoRaiz = raiz?.defasado
+    ? [
+        "O caminho do nucleo mudou nesta sessao (atualizacao do plugin, ou primeira vez).",
+        "`$AGENT_CORE_ROOT` ainda tem o valor antigo" +
+          (raiz.gravado ? " (`" + raiz.gravado + "`)" : " (ausente)") +
+          " e so sera corrigida na proxima sessao.",
+        "",
+        "Ate la, use este caminho ao rodar qualquer script do nucleo:",
+        "",
+        "  " + raiz.nucleo,
+        "",
+      ].join("\n")
+    : "";
+
+  if (!pendencias.length && !retomada && !avisoRaiz) return;
 
   const blocos = [];
   if (retomada) {
@@ -114,9 +150,7 @@ function main(input) {
     "uma linha e siga.",
   ].join("\n");
 
-  const completo = blocos.length
-    ? blocos.join("\n") + (texto ? "\n" + texto : "")
-    : texto;
+  const completo = [avisoRaiz, blocos.join("\n"), texto].filter(Boolean).join("\n");
 
   process.stdout.write(
     JSON.stringify({

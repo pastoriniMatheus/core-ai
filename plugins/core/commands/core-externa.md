@@ -107,7 +107,7 @@ Em poucas linhas, e sem enfeitar:
 - **fonte vencida barra a consulta**, não avisa — e `docs/base-externa.md` diz
   quais são e de quando.
 - **o cliente é a CLI, não o MCP.** Ligar o servidor MCP põe 38 ferramentas no
-  system prompt de toda sessão: ~12.600 tokens, 13× o plugin inteiro do núcleo,
+  system prompt de toda sessão: 12.629 tokens, 13,6× o plugin inteiro do núcleo,
   pagos em todo turno inclusive nos que nunca tocam a base.
 
 Não faça commit. `docs/base-externa.md` e `.claude/core.json` são compartilhados
