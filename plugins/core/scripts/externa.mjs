@@ -404,13 +404,32 @@ function enviar() {
 
   const hoje = new Date();
   const vale = new Date(hoje.getTime() + dias * 86400000).toISOString().slice(0, 10);
-  const p = ext.emiteAutorizacao(PROJETO, arquivo);
+
+  // A AUTORIZACAO NOMEIA A URL, E NAO O ARQUIVO.
+  //
+  // A porta FORA ja exige uma URL publica. Se ela existe de qualquer forma,
+  // mandar a URL em vez de uma copia do arquivo e melhor em tres frentes:
+  //
+  //   nada sai daqui   o Google busca na fonte; o conteudo nunca transita por
+  //                    nos, e a superficie de vazamento do envio some
+  //   funciona         medido: upload de um .txt de 593 KB ficou em `preparing`
+  //                    com tipo `unknown` por mais de 25 minutos; a MESMA
+  //                    materia pela URL ficou `ready` em 25 segundos
+  //   aponta para a    a base guarda o endereco canonico, e nao uma copia que
+  //   verdade          envelhece em silencio enquanto o original muda
+  //
+  // O arquivo em staging continua tendo funcao: e o que a pessoa LE antes de
+  // decidir, e e nele que a varredura de segredo e as heuristicas rodam. So
+  // que ele nao sobe.
+  const p = ext.emiteAutorizacao(PROJETO, origem);
 
   say(`\n  ${c.ok}As quatro portas passaram.${c.off}`);
   say(`  ${c.dim}autorizacao: ${p}${c.off}`);
-  say(`  ${c.dim}vale ${Math.round(cfg.tokenWindowMs / 60000)} minutos, so para ESTE arquivo — se a chamada falhar, pode repetir${c.off}\n`);
+  say(`  ${c.dim}vale ${Math.round(cfg.tokenWindowMs / 60000)} minutos, so para ESTA origem — se a chamada falhar, pode repetir${c.off}\n`);
   say(`  Agora, nesta janela:\n`);
-  say(`    ${c.bold}notebooklm source add "${arquivo}"${c.off}\n`);
+  say(`    ${c.bold}notebooklm source add "${origem}"${c.off}\n`);
+  say(`  ${c.dim}A URL, e nao o arquivo: assim o conteudo nunca sai desta maquina —${c.off}`);
+  say(`  ${c.dim}quem busca e o Google. O arquivo em ${cfg.staging} era para voce ler.${c.off}\n`);
   say(`  E logo depois, para a fonte existir no indice:\n`);
   say(`    ${c.bold}node "${SCRIPT}" registrar "${arquivo}" --origem ${origem} --dias ${dias}${c.off}\n`);
 }

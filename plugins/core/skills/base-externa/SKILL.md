@@ -104,6 +104,20 @@ ele:
 node $AGENT_CORE_ROOT/scripts/externa.mjs enviar <arquivo> --origem <URL>
 ```
 
+**O que sobe é a URL, não o arquivo.** A porta FORA já exige uma URL pública —
+se ela existe de qualquer forma, apontar para ela é melhor em três frentes: o
+conteúdo nunca sai da máquina (quem busca é o Google), a base guarda o endereço
+canônico em vez de uma cópia que envelhece, e funciona — medido, o upload de um
+`.txt` de 593 KB ficou preso em `preparing` por mais de 25 minutos enquanto a
+mesma matéria pela URL ficou pronta em 25 segundos.
+
+O arquivo em `.claude/externa/` continua tendo função: é o que a pessoa lê antes
+de decidir, e é nele que a varredura de segredo roda. Ele só não sobe.
+
+A consequência tem nome: **material sem URL pública não entra.** Um PDF que o
+fornecedor mandou por e-mail e não publicou falha na porta FORA, e isso é o
+desenho funcionando — o que não dá para citar não dá para conferir depois.
+
 ## O que vale e o que não vale
 
 **Vale** — externo, grande, estável, reusado:

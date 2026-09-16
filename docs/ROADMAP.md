@@ -1,6 +1,6 @@
 # O que falta
 
-Estado em 16/09/2026, versão **0.7.0**. Nada aqui é bug conhecido: são coisas
+Estado em 16/09/2026, versão **0.7.1**. Nada aqui é bug conhecido: são coisas
 **nunca exercitadas** e decisões adiadas com motivo.
 
 O núcleo passa 217 testes de guarda, 28 de documentação e 25/25 na aceitação
@@ -79,21 +79,33 @@ Em 16/09/2026 a integracao foi exercitada de ponta a ponta com sessao real
 | `auth check --test` | todos os checks passaram, 29 cookies, token fetch ok |
 | as quatro portas com rede | 7/7, incluindo a `PUBLICA` com `curl` de verdade |
 | `source add` de 593 KB | a fonte entrou na base |
-| `notebooklm ask` | respondeu, em portugues |
+| `notebooklm ask` | leu a fonte e respondeu com citacoes: 12 historias, `[1, 2]`, `[3-9]` |
 | o carimbo de procedencia | saiu na primeira consulta, calou na segunda |
+| o teto de bytes | disparou numa resposta real de 21,3 KB |
 | `conferir` | acusou a fonte que estava no indice e nao na base |
 | servidor Docker | `healthy`, sem bearer 401, com bearer 400, zero reinicios |
 
-O que **nao** foi provado, e nao da para provar sem esperar:
+O envio por ARQUIVO nao funciona, e o por URL funciona — o que mudou o desenho:
 
-- **a fonte nunca terminou de processar.** Um `.txt` de 593 KB ficou em
-  `preparing` por mais de cinco minutos, com tipo `unknown`. Entao a resposta do
-  `ask` veio de uma caderneta vazia — correta, mas nao sobre o material. Nao se
-  sabe se e o tamanho, o formato, ou lentidao do lado do Google.
-- **a resposta longa.** O teto de `tetoRespostaBytes` nunca foi atingido por
-  texto real, porque nao houve fonte indexada para gerar resposta longa.
+| caminho | resultado |
+|---|---|
+| `source add <arquivo>` | `preparing`, tipo `unknown`, travado por 25+ minutos |
+| `source add <URL>` | `ready` em 25 segundos, respondeu com citacoes |
+
+Como a porta FORA ja exigia URL publica, o envio passou a ser da URL. O
+conteudo nunca sai da maquina, e a superficie de vazamento do envio some.
+
+A consequencia esta escrita na skill: **material sem URL publica nao entra**.
+Um PDF que o fornecedor mandou por e-mail falha na porta FORA.
+
+O que **nao** foi provado:
+
+- **por que o upload de arquivo trava.** Nao se sabe se e o tamanho, o formato
+  ou o lado do Google. Como o caminho de URL resolve o caso de uso, isto virou
+  curiosidade e nao bloqueio — mas alguem que precise subir arquivo vai bater
+  nisso.
 - **fonte vencida barrando consulta real.** Testado com data forjada no indice,
-  nunca com uma fonte que venceu de verdade.
+  nunca com uma fonte que venceu de verdade. So o tempo prova, e sao 180 dias.
 
 E uma armadilha nova, descoberta no caminho: com **Python 3.14** a biblioteca
 cospe `AssertionError` de `asyncio` no meio de chamadas que FUNCIONAM. O
