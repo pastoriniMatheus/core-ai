@@ -1,6 +1,6 @@
 # O que falta
 
-Estado em 16/09/2026, versão **0.7.1**. Nada aqui é bug conhecido: são coisas
+Estado em 16/09/2026, versão **0.7.2**. Nada aqui é bug conhecido: são coisas
 **nunca exercitadas** e decisões adiadas com motivo.
 
 O núcleo passa 217 testes de guarda, 28 de documentação e 25/25 na aceitação
@@ -100,10 +100,7 @@ Um PDF que o fornecedor mandou por e-mail falha na porta FORA.
 
 O que **nao** foi provado:
 
-- **por que o upload de arquivo trava.** Nao se sabe se e o tamanho, o formato
-  ou o lado do Google. Como o caminho de URL resolve o caso de uso, isto virou
-  curiosidade e nao bloqueio — mas alguem que precise subir arquivo vai bater
-  nisso.
+- **fonte vencida barrando consulta real.** Ver abaixo.
 - **fonte vencida barrando consulta real.** Testado com data forjada no indice,
   nunca com uma fonte que venceu de verdade. So o tempo prova, e sao 180 dias.
 
@@ -122,6 +119,35 @@ O que falta provar: que a saída real de `source list` casa com os nomes do
 índice. A comparação é por substring normalizada, de propósito — o formato de
 saída de uma biblioteca não-oficial muda entre versões — mas "de propósito" não
 é o mesmo que "testado".
+
+### Upload de arquivo: investigado, e a conclusao mudou o desenho
+
+Tres medicoes na mesma conta e na mesma sessao:
+
+| tamanho | tipo que o Google atribuiu | status |
+|---|---|---|
+| 60 B | `pasted_text` | ready |
+| 97 KB | `pasted_text` | ready |
+| 593 KB | `unknown` | **travado em `preparing`** |
+
+Abaixo do limiar, o conteudo vai INLINE — o Google o classifica como texto
+colado e processa na hora. Acima, o caminho muda e a ingestao nunca termina.
+A biblioteca nao tem culpa: `.txt` nao esta em `_DRIVE_STAGED_UPLOAD_EXTENSIONS`
+(so `.csv`, `.docx`, `.pptx`), vai pelo pipeline resumable em blocos de 64 KB,
+e a fonte E criada com id. Quem para e a ingestao do lado do Google.
+
+**E aqui esta o ponto.** A porta GRANDE exige >= 195 KB. O intervalo que
+funciona termina em algum lugar entre 97 KB e 593 KB. Os dois sao
+**disjuntos**: o caminho de arquivo nunca poderia ter funcionado para nada que
+as portas admitem.
+
+Por isso o envio passou a ser da URL — nao como melhoria, como unica opcao que
+funciona para o material que esta feature existe para receber. E como a porta
+FORA ja exigia URL publica, nao se perdeu nada.
+
+O limiar exato nao foi fechado (esta entre 97 KB e 593 KB) porque a resposta nao
+muda nenhuma decisao: acima de 195 KB nao funciona, e e so acima de 195 KB que
+esta feature envia.
 
 ### Deferimento de ferramentas MCP — a verificação que pode inverter uma decisão
 

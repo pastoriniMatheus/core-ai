@@ -46,6 +46,13 @@ padrão. Tipicamente sobra:
 | tracker e credencial | só se o passo 1 não achou MCP nem configuração |
 | instalar ferramentas externas | sempre — muda a máquina dele, é decisão dele |
 | Graphify local ou servidor MCP | só se ele aceitou instalar o Graphify |
+| base de conhecimento externa | sempre, em uma linha — a maioria dos projetos **não** precisa |
+
+Sobre a última: pergunte se ele lida com **material de terceiro, grande e
+estável** que hoje ninguém versiona — manual de integração, norma, guia de
+migração de framework. Se a resposta for não, pule sem insistir: a base externa
+custa uma conta Google descartável e um ritual de curadoria, e num projeto que
+não tem esse material ela é só manutenção.
 
 Se `$ARGUMENTS` contiver `--sem-ferramentas`, pule a parte de instalação e não
 pergunte sobre ela.
@@ -108,6 +115,26 @@ Graphify que alguém vai desligar na sexta-feira.
 O hook de reconstrução entra junto: sem ele o grafo envelhece e passa a
 responder com alta confiança sobre estrutura que mudou — o pior erro de um mapa
 não é faltar, é estar velho.
+
+## 5b. Base de conhecimento externa, se ele quis
+
+```bash
+node $AGENT_CORE_ROOT/scripts/externa.mjs preparar --projeto "." --modo local
+```
+
+Cria a pasta de staging, o índice versionado `docs/base-externa.md`, e as linhas
+de `.gitignore` que impedem a credencial de ser commitada.
+
+Depois disso, **pare e diga que o resto é dele**: `notebooklm login` abre um
+navegador e pede uma conta Google — que precisa ser **descartável**, porque o
+arquivo gerado é credencial de conta inteira, não um token revogável.
+
+Não tente autenticar por ele, e não sugira usar a conta corporativa "só para
+testar" — é o primeiro passo do modo de falha que essa feature inteira existe
+para evitar.
+
+Se o projeto for usar a base a sério, `/core-externa` cobre o resto: a escolha
+local × equipe, a caderneta, e o servidor de teste.
 
 ## 6. Congele o ponto de partida
 
