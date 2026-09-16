@@ -112,6 +112,184 @@ export const DEFAULTS = {
     staleAfterCommits: 25,
   },
 
+  externa: {
+    // A base de conhecimento externa (NotebookLM e afins).
+    //
+    // O agente CONSULTA; quem alimenta e humano. A inversao e deliberada: o
+    // pedido original era "ensinar o agente a mandar so o que compensa", mas
+    // "compensa" e julgamento probabilistico, e a tese deste projeto e que
+    // julgamento nao vira garantia por estar escrito no prompt. Tirar o verbo
+    // do agente e mais determinista do que ensina-lo a julgar — a forma mais
+    // forte de um hook e a ausencia da ferramenta.
+    //
+    // O que se perde e pouco: alimentar e raro. O que se evita nao tem botao de
+    // desfazer — conteudo enviado para um servidor do Google, sob a conta de
+    // alguem, nao volta.
+    enabled: true,
+
+    // Como a CLI aparece num comando de shell. O portao so olha comandos que
+    // batem aqui: sem isto ele inspecionaria TODO comando Bash da sessao, e uma
+    // guarda cara em todo comando e uma guarda que alguem desliga.
+    //
+    // A CLI, e nao o MCP, e o cliente recomendado: as 38 ferramentas MCP do
+    // notebooklm-py medem 12.629 tokens de system prompt em TODA sessao —
+    // 13,6x o plugin inteiro do nucleo (~928) — enquanto a CLI custa zero.
+    binarios: ["(^| |/|[\\\\])notebooklm(-mcp)?([.](exe|cmd|bat))?( |$)"],
+
+    // Se alguem ligar o MCP assim mesmo, o portao continua valendo. Casado
+    // contra o NOME DO SERVIDOR (`mcp__notebooklm__chat_ask` -> `notebooklm`),
+    // nunca contra a acao: um servidor chamado "notes" nao vira base externa
+    // por ter ferramenta de nome parecido.
+    servidores: ["^(notebooklm|nblm|notebook[_-]?lm)"],
+
+    // Consultar nao exporta arquivo nenhum: passa livre.
+    //
+    // Casado contra o comando sem o binario (`notebooklm source list` ->
+    // `source list`) e contra a acao MCP (`chat_ask`). Acao DESCONHECIDA nao
+    // entra aqui: versao nova da biblioteca traz comando novo, e o default
+    // seguro e exigir autorizacao, nao liberar.
+    consulta: [
+      "^(ask|suggest-prompts|suggest-next-steps|history|status|clear|doctor|completion|list|summary|metadata)( |$)",
+      "^source +(list|get|search|fulltext|books|guide|stale|wait)( |$)",
+      "^note +(list|get)( |$)",
+      "^artifact +(list|get|get-prompt|choices|suggestions|poll|wait|export)( |$)",
+      "^(label +(list|sources)|collection +(list|notebooks))( |$)",
+      "^share +(status|view-level)( |$)",
+      "^research +(status|wait)( |$)",
+      "^(profile +list|language +(get|list)|agent +show|skill +(list|show|status))( |$)",
+      "^auth +(check|inspect)( |$)",
+      "^(chat_ask|chat_start|chat_status|chat_cancel|suggest_prompts)$",
+      "^(notebook_list|notebook_describe|server_info|share_status|research_status)$",
+      "^(source_list|source_read|source_wait|source_list_play_books|studio_list|studio_status)$",
+    ],
+
+    // Bloqueio SEM escape, como o estado final de um card.
+    //
+    // Tres familias, cada uma por um motivo diferente:
+    //
+    //   compartilhar  torna publico um notebook que pode ter material interno,
+    //                 e o agente nao tem motivo nenhum para faze-lo;
+    //   apagar        destroi conhecimento que alguem reuniu a mao;
+    //   gerar         resumo, audio e nota produzidos por modelo viram FONTE, e
+    //                 a consulta seguinte le o palpite do agente como se fosse a
+    //                 documentacao do fornecedor. E o loop de auto-contaminacao:
+    //                 a base deixa de conter so o que alguem de fora escreveu.
+    //
+    // `auth logout` entra porque derruba a sessao — em modo equipe, de todo
+    // mundo — e so um humano com navegador a reconstroi.
+    proibidas: [
+      "^share +(add|public|remove|update)( |$)",
+      "^(delete|copy)( |$)",
+      "^(source|note|artifact|label|collection|profile) +(delete|delete-by-title|clean)( |$)",
+      "^note +(save|create)( |$)",
+      "^generate +",
+      "^research +(discover|import|cancel)( |$)",
+      "^auth +logout( |$)",
+      "^share_(set_access|set_user|remove_user)$",
+      "^(notebook|source|studio)_delete$",
+      "^(note_save|studio_generate|research_start|research_import)$",
+    ],
+
+    // Onde o material a enviar precisa estar antes de subir.
+    //
+    // Allowlist de ORIGEM, e ela vence a blocklist: nada sobe de dentro da
+    // arvore do repositorio, nem com autorizacao. Uma lista de arquivos
+    // proibidos sempre tem um furo que ninguem pensou; uma pasta unica de onde
+    // as coisas podem sair nao tem. E deixa a pergunta "posso mandar isso?"
+    // virar "isso esta na pasta de staging?", que e comando, nao julgamento.
+    staging: ".claude/externa",
+
+    // O indice VERSIONADO do que existe na base e por que.
+    //
+    // Sem ele a base vira oraculo paralelo: ninguem sabe o que tem la dentro,
+    // de quando e, nem se ainda vale. Com ele, "alguem devia atualizar" vira
+    // comparacao de datas — que o portao consegue fazer.
+    indice: "docs/base-externa.md",
+
+    // Depois disso uma fonte esta vencida e a CONSULTA e negada, nao apenas
+    // avisada. Fonte velha responde com confianca sobre o que nao existe mais:
+    // e o mapa velho do Graphify, pior, porque aqui nao ha `git log` medindo o
+    // atraso.
+    validadeDias: 180,
+
+    // Teto de fontes na base. Cheia, `source add` e negado — o que forca
+    // curadoria em vez de acumulo. Uma base que so cresce e uma base que
+    // ninguem poda, e o custo de podar cresce junto.
+    tetoFontes: 50,
+
+    // As portas do "compensa mandar", em comando em vez de julgamento.
+    // GRANDE: material menor que isto o subagente le direto, mais barato do
+    // que indexar e manter. REPETIDO: a segunda consulta ao mesmo material e o
+    // gatilho; a primeira nunca indexa, le e segue — e a porta que mais
+    // economiza, porque mata o acumulo especulativo.
+    portas: { bytesMinimos: 200000, consultasMinimas: 2 },
+
+    // Bloqueio SEM escape: caminhos que nunca saem da maquina.
+    //
+    // Diferente da escada de dependencia, aqui nao ha resposta "sim". A escada
+    // as vezes termina em instalar o pacote; vazar credencial nunca termina
+    // bem. `settings.local.json` esta na lista porque e do proprio nucleo: e
+    // onde mora o token do tracker do time.
+    //
+    // Sem nenhuma barra invertida solta, como o resto do arquivo: estes padroes
+    // atravessam shell, JSON e heredoc, e cada camada pode comer um escape.
+    segredoCaminhos: [
+      "[.]env(?![.](example|sample|template|dist))([^a-zA-Z0-9]|$)",
+      "settings[.]local[.]json",
+      "(master_token|storage_state|credentials|service[-_]account)[a-z0-9_-]*[.]json",
+      "id_(rsa|dsa|ecdsa|ed25519)",
+      "[.](pem|key|p12|pfx|ppk|jks|keystore|kdbx)([^a-zA-Z0-9]|$)",
+      "[.](npmrc|pypirc|netrc|pgpass)([^a-zA-Z0-9]|$)",
+      "[.](ssh|aws|gnupg)[/\\\\]",
+      "[.]kube[/\\\\]config",
+      "[.](sql|dump|bak)([^a-zA-Z0-9]|$)",
+      "(^|[/\\\\])(secrets?|backups?)[/\\\\]",
+    ],
+
+    // Bloqueio SEM escape: formatos de segredo dentro do proprio conteudo.
+    // Um arquivo de nome inocente com uma chave dentro vaza igual.
+    segredoConteudo: [
+      "-----BEGIN [A-Z ]*PRIVATE KEY",
+      "AKIA[0-9A-Z]{16}",
+      "(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}",
+      "github_pat_[A-Za-z0-9_]{20,}",
+      "xox[baprs]-[A-Za-z0-9-]{10,}",
+      "sk-[A-Za-z0-9_-]{20,}",
+      "AIza[0-9A-Za-z_-]{35}",
+      "(client_secret|api[_-]?secret)[^A-Za-z0-9]{1,4}[A-Za-z0-9_-]{12,}",
+      "(postgres|postgresql|mysql|mongodb|redis|amqp)([+][a-z]+)?://[^ :@]+:[^ @]+@",
+    ],
+
+    // Bloqueio SEM escape: dado pessoal. So os formatos BRASILEIROS pontuados,
+    // de proposito — CPF sem pontuacao e onze digitos, e onze digitos aparecem
+    // em id, timestamp e hash o tempo todo. Falso positivo aqui custa caro
+    // porque o bloqueio nao tem escape.
+    //
+    // Cartao (Luhn) e "tres ou mais e-mails distintos" nao sao regex: estao em
+    // lib/externa.mjs, onde da para contar e validar.
+    piiPatterns: [
+      "[0-9]{3}[.][0-9]{3}[.][0-9]{3}-[0-9]{2}",
+      "[0-9]{2}[.][0-9]{3}[.][0-9]{3}/[0-9]{4}-[0-9]{2}",
+    ],
+
+    // Quanto tempo a autorizacao de envio vale. Mesma janela do portao de
+    // publicacao: uma autorizacao esquecida de ontem nao autoriza nada hoje.
+    //
+    // Diferente do publish-ok, este token NOMEIA o que autoriza: ele guarda o
+    // caminho do arquivo liberado, e o portao compara. Um token generico o
+    // agente cria sozinho; um token que nomeia o arquivo so sai de quem rodou
+    // as portas.
+    tokenWindowMs: 300000,
+
+    // Teto de bytes de uma resposta antes de o aviso de custo aparecer.
+    //
+    // Uma resposta nao custa uma vez: ela fica no contexto e e reprocessada em
+    // TODO turno seguinte. Neste projeto ja foram medidos 8.551.717 tokens de
+    // entrada contra 202.465 de saida numa sessao — 42x. 4KB colados no turno
+    // 10 de uma sessao de 75 nao custam 4KB.
+    tetoRespostaBytes: 4000,
+  },
+
   publish: {
     // O portao de publicacao: PR e movimento de card exigem sua autorizacao,
     // toda vez. Ver pre-publish-guard.mjs.

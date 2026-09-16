@@ -1,9 +1,9 @@
 # O que falta
 
-Estado em 15/09/2026, versão **0.4.1**. Nada aqui é bug conhecido: são coisas
+Estado em 16/09/2026, versão **0.6.0**. Nada aqui é bug conhecido: são coisas
 **nunca exercitadas** e decisões adiadas com motivo.
 
-O núcleo passa 135 testes de guarda, 15 de documentação e 14/14 na aceitação
+O núcleo passa 168 testes de guarda, 19 de documentação e 19/19 na aceitação
 com sessões reais do Claude Code. Isso prova o que foi testado — não o que não
 foi, e esta página existe para que a diferença entre as duas coisas fique visível.
 
@@ -59,15 +59,51 @@ rodou de verdade** no diretório do usuário.
 
 ## Decidido adiar, com motivo
 
-### Ponytail, Graphify e notebooklm-py
+### Ponytail e Graphify
 
-`/core-ferramentas` instala e configura os três. **Nenhum está instalado** — e o
-núcleo funciona sem eles. O Graphify é o que mais acrescentaria: a skill
-`mapear-codigo` já descreve quando usar grafo, mas não há grafo.
+`/core-ferramentas` instala e configura os dois. O Graphify é o que mais
+acrescentaria: a skill `mapear-codigo` já descreve quando usar grafo.
 
 O modo servidor MCP do Graphify tem a configuração pronta e **o servidor não
 existe**. Decidido começar local: migrar depois é barato, e montar infra para um
 problema não medido é criar manutenção à toa.
+
+### A base externa nunca falou com o Google
+
+Toda a camada 0 da base externa está testada — 33 casos, incluindo o portão, a
+autorização nomeada, o frescor e o que volta. **Mas nenhuma chamada real ao
+NotebookLM aconteceu**: não há sessão autenticada, porque autenticar exige um
+humano num navegador, e a conta tem de ser descartável.
+
+O que isso deixa sem prova:
+
+- que `notebooklm ask` devolve o que se espera, e em que formato
+- que o carimbo de procedência do `post-externa-resposta` casa com a saída real
+- que o servidor em Docker **serve** (ele constrói, sobe, e recusa subir sem
+  sessão — isso está provado; responder a uma consulta, não)
+- o tempo de uma consulta, que é o número que decide se ela vale a pena no meio
+  de uma decisão
+
+**Como fechar:** criar a conta descartável, `notebooklm login`, `notebooklm auth
+check --test`, e então uma consulta real. Vinte minutos, e é o maior buraco
+desta versão.
+
+### Deferimento de ferramentas MCP — a verificação que pode inverter uma decisão
+
+A escolha de usar a CLI em vez do servidor MCP foi feita sobre um número medido:
+as 38 ferramentas do `notebooklm-py` custam **12.629 tokens** de system prompt em
+toda sessão, contra ~928 do plugin inteiro.
+
+Há um caminho que mudaria a conta. Se as ferramentas MCP chegarem **deferidas** —
+só o nome, com o schema carregado sob demanda — o custo medido cai para 395
+tokens, 32× menos. O Claude Code faz isso em algumas configurações.
+
+O que **não** se sabe: se é um botão controlável por projeto ou comportamento do
+harness. Enquanto for a segunda coisa, nenhuma linha de código pode se apoiar
+nisso — e nenhuma se apoia. O portão cobre os dois caminhos justamente por isso.
+
+**Como fechar:** uma sessão de teste com o MCP ligado, medindo `/context` antes
+e depois. Se for controlável, o MCP volta à mesa para uso interativo.
 
 ### mattpocock/skills — não entra
 

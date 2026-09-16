@@ -84,7 +84,8 @@ o baseline e confere no fim. O `session-start` oferece esse comando sozinho na
 primeira sessão de um projeto ainda não configurado.
 
 Para configurar uma peça só: `/core-setup` (projeto), `/core-tracker` (tracker),
-`/core-ferramentas` (ferramentas externas).
+`/core-ferramentas` (ferramentas externas), `/core-externa` (base de conhecimento
+externa).
 
 Ele pergunta o que falta e escreve nos lugares certos.
 
@@ -236,10 +237,11 @@ autorização, uma publicação, que é a semântica de "por PR e por card".
 | `entregar-trabalho` | Permissão por PR e por card, prova do caminho real, comentário com link |
 | `ci-local` | Verificador que roda na máquina em segundos, em vez de esperar CI externo |
 | `atacar-card` | Do identificador à entrega: busca o card, conduz as seis fases, para no portão |
+| `base-externa` | Quando consultar base externa vale mais que ler direto, e o que nunca sobe |
 
 ## Comandos
 
-`/core-init` `/core-setup` `/core-tracker` `/core-ferramentas` `/core-doctor` `/baseline`
+`/core-init` `/core-setup` `/core-tracker` `/core-ferramentas` `/core-externa` `/core-doctor` `/baseline`
 
 ## Trabalhar um card
 
@@ -308,6 +310,7 @@ Os scripts do repositório, e o que cada um faz:
 | `aceitacao.mjs` | teste ponta a ponta com sessões reais do Claude Code |
 | `gerar-referencia.mjs` | gera `docs/CONFIGURACAO.md` a partir do código |
 | `sincronizar-plugin.mjs` | espelha os scripts para dentro do plugin, e verifica |
+| `externa.mjs` | as quatro portas da base externa, o índice e o servidor de teste |
 | `raiz.mjs` | acha o núcleo nas duas formas de instalação |
 
 | Modo | Comando | Quando |

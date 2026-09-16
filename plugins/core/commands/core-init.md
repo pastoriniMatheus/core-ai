@@ -60,7 +60,10 @@ node $AGENT_CORE_ROOT/scripts/ferramentas.mjs --instalar --graphify local
 `uv`; se faltar, diga onde obter e siga sem ele — o núcleo funciona sem.
 
 `notebooklm-py` só com pedido explícito: é biblioteca não-oficial sobre API não
-documentada, e o repositório continua sendo a fonte de verdade da equipe.
+documentada, a credencial dela é de conta Google inteira, e o repositório
+continua sendo a fonte de verdade da equipe. Se ele quiser, a configuração toda
+— staging, índice, guardas — está em `/core-externa`; instalar sem rodar esse
+comando entrega a parte perigosa sem a parte útil.
 
 ## 4. Configure o projeto
 

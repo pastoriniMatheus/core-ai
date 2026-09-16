@@ -69,12 +69,16 @@ const FERRAMENTAS = [
   {
     id: "notebooklm",
     nome: "notebooklm-py",
-    papel: "base de conhecimento externa",
+    papel: "base de conhecimento externa (material de terceiro, grande)",
     opcional: true,
     detecta: () => temBin("notebooklm"),
     requer: [{ bin: "uv", como: "https://docs.astral.sh/uv/getting-started/installation/" }],
+    // `[browser]` e nao `[mcp]`: o cliente e a CLI. Ligar o servidor MCP poe 38
+    // ferramentas no system prompt de TODA sessao — ~12.600 tokens medidos, 13x
+    // o plugin inteiro do nucleo — pagos em todo turno inclusive nos que nunca
+    // tocam a base. A CLI faz o mesmo por zero.
     instala: () => rodar('uv tool install "notebooklm-py[browser]"'),
-    nota: "não-oficial, sobre API não documentada do Google; mantenha fora do caminho crítico e faça `notebooklm login` depois",
+    nota: "biblioteca não-oficial sobre API não documentada do Google, e a credencial é de CONTA INTEIRA: use conta descartável. Depois de instalar, rode `/core-externa` — instalar sem as guardas é a parte perigosa sem a parte útil",
   },
 ];
 

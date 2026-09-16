@@ -10,7 +10,7 @@ import { existsSync, readFileSync, statSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { homedir } from "node:os";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { raizDoNucleo } from "./raiz.mjs";
 
 // O mesmo script roda do repositorio e de dentro do plugin, e a profundidade
@@ -256,9 +256,36 @@ temBin("graphify")
   ? OK("graphify presente")
   : console.log("  [--]    graphify ausente         uv tool install graphifyy");
 
-temBin("notebooklm")
-  ? OK("notebooklm presente")
-  : console.log("  [--]    notebooklm ausente       uv tool install \"notebooklm-py[browser]\"");
+// A base externa e SEMPRE aviso, nunca erro — mesmo quebrada. Ela esta
+// declaradamente fora do caminho critico, e um doctor que pinta vermelho por
+// causa dela ensina o time a ignorar vermelho; dai o vermelho que importa
+// tambem passa batido.
+if (temBin("notebooklm")) {
+  OK("notebooklm presente");
+
+  // Fonte vencida nao e detalhe: o portao BARRA a consulta quando ha uma, e
+  // quem nao souber disso vai achar que a integracao quebrou. O diagnostico
+  // precisa dizer antes que o bloqueio diga.
+  try {
+    const { lerIndice } = await import(
+      pathToFileURL(join(NUCLEO, "hooks", "lib", "externa.mjs")).href
+    );
+    const { DEFAULTS } = await import(
+      pathToFileURL(join(NUCLEO, "hooks", "lib", "config.mjs")).href
+    );
+    const idx = lerIndice(PROJECT, DEFAULTS.externa);
+    if (!idx.existe) {
+      console.log("  [--]    base externa nao preparada   /core-externa");
+    } else if (idx.vencidas.length) {
+      WARN(`base externa: ${idx.vencidas.length} fonte(s) vencida(s)`,
+        `${idx.vencidas.slice(0, 3).map((f) => f.nome).join(", ")} — enquanto houver uma vencida, a CONSULTA e barrada`);
+    } else {
+      OK(`base externa: ${idx.fontes.length} fonte(s), nenhuma vencida`);
+    }
+  } catch { /* a base externa nunca derruba o diagnostico */ }
+} else {
+  console.log("  [--]    notebooklm ausente       uv tool install \"notebooklm-py[browser]\"");
+}
 
 // Plugins sao declarados no settings.json; e de la que se sabe o que a equipe usa.
 const declarados = Object.keys(settings?.enabledPlugins || {});

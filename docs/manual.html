@@ -448,9 +448,9 @@
     <p class="standfirst">Um núcleo genérico que organiza as diretrizes do agente por <strong>mecanismo de execução</strong> — não por ferramenta. Tudo que pode virar hook vira hook; só o que sobra vira instrução.</p>
     <div class="status-row">
       <span class="chip good">Camada 0 implementada</span>
-      <span class="chip good">135/135 unidade</span>
+      <span class="chip good">168/168 unidade</span>
       <span class="chip good">19/19 aceita&ccedil;&atilde;o</span>
-      <span class="chip">6 skills</span>
+      <span class="chip">8 skills</span>
       <span class="chip">4 comandos</span>
       <span class="chip">Node 18+, zero dependências</span>
     </div>
@@ -472,6 +472,7 @@
       <li><a href="#rollout">Rollout</a></li>
       <li><a href="#validacao">Validado em sessão real</a></li>
       <li><a href="#ferramentas">Ferramentas externas</a></li>
+      <li><a href="#base-externa">Base de conhecimento externa</a></li>
       <li><a href="#camadas-projeto">Camadas de projeto</a></li>
     </ol>
   </nav>
@@ -671,7 +672,7 @@ prefixado com CORE_DEP_OK=1.</code></pre>
             <tr><td>YAML e check de projeto</td><td>YAML válido e quebrado, projectCheck que passa, falha e não deve rodar</td><td class="num-cell">6</td></tr>
             <tr><td>Configuração e degradação</td><td>ferramenta ausente não bloqueia; aviso de projeto não configurado</td><td class="num-cell">3</td></tr>
             <tr><td>Portão por MCP</td><td>tracker e PR via MCP, leitura passa, Done bloqueado, token one-shot e vencido</td><td class="num-cell">9</td></tr>
-            <tr><td colspan="2" style="color:var(--accent-ink);font-weight:600">Total</td><td class="num-cell" style="color:var(--accent-ink);font-weight:600">135 / 135</td></tr>
+            <tr><td colspan="2" style="color:var(--accent-ink);font-weight:600">Total</td><td class="num-cell" style="color:var(--accent-ink);font-weight:600">168 / 168</td></tr>
           </tbody>
         </table>
       </div>
@@ -756,7 +757,7 @@ prefixado com CORE_DEP_OK=1.</code></pre>
         <p><strong>Pule ALINHAR quando o pedido for pequeno e inequívoco.</strong> Entrevistar alguém sobre uma correção de typo destrói a confiança na ferramenta mais rápido do que qualquer bug. Regra sem exceção declarada é regra aplicada fora de contexto.</p>
       </div>
 
-      <h3>As quatro skills</h3>
+      <h3>As skills e o que as dispara</h3>
       <div class="scroller">
         <table>
           <thead><tr><th>Skill</th><th>Dispara quando</th></tr></thead>
@@ -767,6 +768,8 @@ prefixado com CORE_DEP_OK=1.</code></pre>
             <tr><td><code>extrair-skill</code></td><td>O usuário corrige uma convenção não escrita, ou algo custou tempo para descobrir</td></tr>
             <tr><td><code>entregar-trabalho</code></td><td>Antes de qualquer PR, antes de mover um card, ou quando a tarefa parece pronta</td></tr>
             <tr><td><code>ci-local</code></td><td>Primeira vez num projeto, ou quando não há um jeito único de verificá-lo</td></tr>
+            <tr><td><code>atacar-card</code></td><td>O usuário cita um identificador de card e manda atacá-lo</td></tr>
+            <tr><td><code>base-externa</code></td><td>Vai consultar &mdash; ou cogitar alimentar &mdash; a base de conhecimento externa</td></tr>
           </tbody>
         </table>
       </div>
@@ -959,7 +962,7 @@ node scripts/doctor.mjs    ~/meu-projeto   <span class="c"># confirma</span>
 
       <p>Um comando leva o projeto de &ldquo;plugin instalado&rdquo; a <strong>pleno</strong>: detecta a stack, pergunta <strong>uma vez</strong> o que n&atilde;o d&aacute; para inferir, instala o que voc&ecirc; autorizar, escreve a configura&ccedil;&atilde;o, constr&oacute;i o grafo, congela o baseline e confere no fim. O <code>session-start</code> oferece esse comando sozinho na primeira sess&atilde;o de um projeto ainda n&atilde;o configurado.</p>
 
-      <p>Para configurar uma pe&ccedil;a s&oacute;: <code>/core-setup</code> (projeto), <code>/core-tracker</code> (tracker), <code>/core-ferramentas</code> (ferramentas externas).</p>
+      <p>Para configurar uma pe&ccedil;a s&oacute;: <code>/core-setup</code> (projeto), <code>/core-tracker</code> (tracker), <code>/core-ferramentas</code> (ferramentas externas), <code>/core-externa</code> (base de conhecimento externa).</p>
 
       <p>O instalador &eacute; <strong>aditivo</strong>: hooks de outras ferramentas no mesmo evento s&atilde;o preservados, uma skill sua com o mesmo nome n&atilde;o &eacute; sobrescrita, e rodar duas vezes n&atilde;o duplica nada.</p>
 
@@ -972,7 +975,7 @@ node scripts/doctor.mjs    ~/meu-projeto   <span class="c"># confirma</span>
           <tbody>
             <tr><td><code>.claude/settings.json</code></td><td>permiss&otilde;es, marketplace</td><td>versionar</td></tr>
             <tr><td><code>.claude/settings.local.json</code></td><td>hooks e <code>AGENT_CORE_ROOT</code> desta m&aacute;quina, credenciais</td><td><strong>nunca</strong></td></tr>
-            <tr><td><code>.claude/skills/</code> <code>commands/</code></td><td>as 6 skills e os 4 comandos</td><td>versionar</td></tr>
+            <tr><td><code>.claude/skills/</code> <code>commands/</code></td><td>as 8 skills e os 7 comandos</td><td>versionar</td></tr>
             <tr><td><code>CLAUDE.md</code> <code>CONTEXT.md</code> <code>core.json</code></td><td>roteador, vocabul&aacute;rio, ajustes</td><td>versionar</td></tr>
           </tbody>
         </table>
@@ -1250,6 +1253,101 @@ node scripts/aceitacao.mjs --manter   <span class="c"># não apaga o projeto no 
       </div>
 
       <p>O <code>doctor.mjs</code> relata quais est&atilde;o presentes &mdash; e <strong>acusa erro se duas autoridades de processo estiverem habilitadas ao mesmo tempo</strong>, que &eacute; o modo mais silencioso de perder assertividade.</p>
+    </section>
+
+
+    <!-- ========================================== BASE EXTERNA -->
+    <section id="base-externa">
+      <h2><span class="num">EXTENS&Atilde;O</span>A base de conhecimento externa</h2>
+      <p class="lede">Material de terceiro, grande e est&aacute;vel, que ningu&eacute;m vai versionar &mdash; manual de integra&ccedil;&atilde;o, norma, guia de migra&ccedil;&atilde;o. O agente <strong>consulta</strong>; quem alimenta &eacute; humano.</p>
+
+<pre><code>/core-externa</code></pre>
+
+      <div class="callout">
+        <p><strong>O invariante:</strong> se a base externa sumisse hoje, a equipe n&atilde;o perderia nada al&eacute;m de tempo de busca. Se apag&aacute;-la doeria, algu&eacute;m p&ocirc;s l&aacute; dentro algo que devia estar no reposit&oacute;rio &mdash; e isso &eacute; detect&aacute;vel olhando <code>docs/base-externa.md</code>. Ela &eacute; <strong>&iacute;ndice de busca, n&atilde;o mem&oacute;ria</strong>.</p>
+      </div>
+
+      <h3>Por que o agente n&atilde;o envia</h3>
+
+      <p>O pedido original era outro: <em>ensinar o agente a mandar s&oacute; o que compensa</em>. Mas &ldquo;compensa&rdquo; &eacute; julgamento probabil&iacute;stico, e a tese deste n&uacute;cleo &eacute; que julgamento n&atilde;o vira garantia por estar escrito no prompt. <strong>Tirar o verbo do agente &eacute; mais determin&iacute;stico do que ensin&aacute;-lo a julgar</strong> &mdash; a forma mais forte de um hook &eacute; a aus&ecirc;ncia da ferramenta.</p>
+
+      <p>A assimetria decide: falso positivo custa um prompt; falso negativo &eacute; permanente, externo, e sob a conta de algu&eacute;m. Um <code>.env</code> de cliente dentro de um notebook do Google n&atilde;o &eacute; problema de engenharia &mdash; &eacute; de contrato, e n&atilde;o tem bot&atilde;o de desfazer.</p>
+
+      <h3>As quatro portas</h3>
+      <p>O que o agente faz &eacute; <strong>propor</strong>, e s&oacute; quando as quatro passam. Todas verific&aacute;veis por comando, nenhuma por opini&atilde;o:</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Porta</th><th>Exige</th><th>Verifica-se com</th></tr></thead>
+          <tbody>
+            <tr><td><strong>FORA</strong></td><td>escrito por terceiro, com URL p&uacute;blica cit&aacute;vel</td><td><code>git ls-files</code> n&atilde;o acha, e a URL abre sem login</td></tr>
+            <tr><td><strong>GRANDE</strong></td><td>&ge; ~200&nbsp;KB (&asymp;50k tokens)</td><td><code>wc -c</code></td></tr>
+            <tr><td><strong>REPETIDO</strong></td><td>&ge; 2 consultas <em>j&aacute; registradas</em></td><td><code>docs/base-externa.md</code></td></tr>
+            <tr><td><strong>EST&Aacute;VEL</strong></td><td>nenhum commit nosso muda o conte&uacute;do</td><td>decorre de FORA; a validade cuida do resto</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>O gatilho &eacute; a segunda consulta ao mesmo material.</strong> A primeira nunca indexa: l&ecirc; e segue. &Eacute; a porta que mais economiza, porque mata o ac&uacute;mulo especulativo &mdash; o h&aacute;bito de mandar para l&aacute; tudo que &ldquo;pode ser &uacute;til depois&rdquo;.</p>
+
+      <h3>A autoriza&ccedil;&atilde;o nomeia o que autoriza</h3>
+
+      <p>O portão de publicação usa um arquivo vazio: qualquer um cria com <code>touch</code>, e lá isso está certo — ele existe para forçar a <em>pergunta</em> ao usuário, e o agente criar o arquivo depois do &ldquo;pode&rdquo; é o protocolo.</p>
+
+      <p>Aqui n&atilde;o serve. O que precisa ser verdade n&atilde;o &eacute; <em>o usu&aacute;rio disse sim</em>, e sim <em>as portas foram checadas por comando</em>. Ent&atilde;o o token guarda o caminho do arquivo liberado, e o port&atilde;o compara com o que o comando est&aacute; de fato enviando. Um token gen&eacute;rico o agente fabrica sozinho; um token que nomeia o arquivo s&oacute; sai de quem rodou <code>externa.mjs enviar</code>.</p>
+
+      <h3>O que o port&atilde;o barra sem escape</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>O qu&ecirc;</th><th>Por qu&ecirc;</th></tr></thead>
+          <tbody>
+            <tr><td>credencial, CPF/CNPJ, cart&atilde;o (Luhn + bandeira), 3+ e-mails distintos</td><td>a escada de depend&ecirc;ncia &agrave;s vezes termina em &ldquo;sim&rdquo;; vazar credencial nunca termina bem</td></tr>
+            <tr><td>arquivo versionado no reposit&oacute;rio</td><td>o agente j&aacute; l&ecirc; de gra&ccedil;a; duplicar cria segunda autoridade, que desatualiza no primeiro commit</td></tr>
+            <tr><td>qualquer coisa fora de <code>.claude/externa/</code></td><td>allowlist de origem vence blocklist: lista de proibidos sempre tem um furo, pasta &uacute;nica n&atilde;o tem</td></tr>
+            <tr><td><code>share</code> e qualquer <code>delete</code></td><td>tornar p&uacute;blico &eacute; catastr&oacute;fico e silencioso; apagar destr&oacute;i o que algu&eacute;m reuniu &agrave; m&atilde;o</td></tr>
+            <tr><td><code>note save</code>, <code>generate</code>, <code>research</code></td><td>texto de modelo vira <em>fonte</em>, e a consulta seguinte l&ecirc; o palpite do agente como se fosse a doc do fornecedor</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>E a checagem de segredo vale <strong>at&eacute; para a pergunta</strong>: colar uma fun&ccedil;&atilde;o do cliente dentro do <code>ask</code> &eacute; a fuga mais prov&aacute;vel, e nenhuma instru&ccedil;&atilde;o em prompt a pega.</p>
+
+      <h3>Fonte vencida barra a consulta</h3>
+
+      <p>N&atilde;o avisa: <strong>barra</strong>. Um aviso que aparece em toda consulta vira ru&iacute;do em duas semanas, e a fonte continua velha. O bloqueio tem conserto de um comando e acontece no m&aacute;ximo duas vezes por ano &mdash; e quando aparece, a pergunta n&atilde;o &eacute; <em>como destravo?</em>, &eacute; <em>esta fonte ainda merece estar aqui?</em></p>
+
+      <p>&Eacute; o mesmo erro que <code>graph.staleAfterCommits</code> foi criado para prevenir, e aqui ele &eacute; pior: n&atilde;o h&aacute; <code>git log</code> medindo o atraso, s&oacute; a data que algu&eacute;m escreveu no &iacute;ndice.</p>
+
+      <h3>E o que volta</h3>
+
+      <p>Quando a biblioteca quebra &mdash; e ela vai quebrar no dia em que o Google mexer num endpoint interno &mdash; a resposta n&atilde;o vem com erro limpo: vem vazia, ou vem HTML de login com status 200. O agente leria vazio como <em>&ldquo;n&atilde;o h&aacute; informa&ccedil;&atilde;o sobre isso na base&rdquo;</em> e responderia com confian&ccedil;a a partir do nada. Alucina&ccedil;&atilde;o por omiss&atilde;o.</p>
+
+      <p>Por isso falha nunca vira vazio: vira <code>[notebooklm indispon&iacute;vel &mdash; responda sem esta fonte e diga isso explicitamente]</code>. E toda resposta ganha carimbo de proced&ecirc;ncia, porque ela &eacute; s&iacute;ntese de um modelo sobre fontes que ningu&eacute;m est&aacute; vendo &mdash; sem data e sem autoria no reposit&oacute;rio.</p>
+
+      <h3>CLI, n&atilde;o MCP &mdash; e o n&uacute;mero que decidiu</h3>
+
+      <div class="callout warn">
+        <p>Ligar o servidor MCP p&otilde;e <strong>38 ferramentas</strong> no system prompt de <em>toda</em> sess&atilde;o do projeto: <strong>~12.600 tokens medidos</strong>, contra ~928 do plugin inteiro do n&uacute;cleo. S&atilde;o <strong>13&times; o n&uacute;cleo</strong>, pagos em todo turno &mdash; inclusive nos que nunca tocam a base. Numa sess&atilde;o de 75 turnos, cerca de 947 mil tokens, 11% de toda a entrada.</p>
+        <p>A CLI faz o mesmo por <strong>zero</strong> always-on, e ainda deixa escolher <em>onde</em> a resposta longa aterrissa: dentro de um subagente, em vez de no contexto principal, onde seria reprocessada a cada turno.</p>
+      </div>
+
+      <p>&Eacute; a regra da arquitetura aplicada a si mesma: conte&uacute;do de camada 2 n&atilde;o se paga como camada 0.</p>
+
+      <h3>Local e equipe</h3>
+      <div class="pair">
+        <div class="panel hard">
+          <span class="tag">Local &mdash; padr&atilde;o</span>
+          <p>Uma pessoa, uma m&aacute;quina, nenhum servidor. A credencial mora em <code>~/.notebooklm/</code>, fora da &aacute;rvore do reposit&oacute;rio.</p>
+          <p>&Eacute; onde come&ccedil;ar sempre: migrar depois custa uma linha.</p>
+        </div>
+        <div class="panel soft">
+          <span class="tag">Equipe &mdash; s&oacute; com medi&ccedil;&atilde;o</span>
+          <p>A pergunta n&atilde;o &eacute; <em>local ou equipe?</em> &mdash; &eacute; <strong>esta conta Google &eacute; descart&aacute;vel e s&oacute; dela?</strong>. &ldquo;N&atilde;o&rdquo; <strong>recusa</strong> o modo equipe, n&atilde;o avisa.</p>
+          <p>N leitores, 1 curador. E a sess&atilde;o &eacute; &uacute;nica: um curioso abrindo a UI logada derruba os dez.</p>
+        </div>
+      </div>
+
+      <p>Montar o servidor para um problema n&atilde;o medido &eacute; criar manuten&ccedil;&atilde;o &agrave; toa &mdash; a mesma decis&atilde;o j&aacute; tomada para o Graphify. Comece local, instrumente, e s&oacute; levante o servidor quando a demanda aparecer nos n&uacute;meros.</p>
     </section>
 
     <!-- ========================================== 10. CAMADAS PROJ -->
