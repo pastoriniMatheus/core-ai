@@ -133,7 +133,15 @@ const cacheBin = new Map();
  *
  * O exit code tambem nao serve: cmd.exe deveria devolver 9009 e devolve 1.
  */
-function binExiste(cmd) {
+/**
+ * O binario existe no PATH? Devolve o caminho resolvido, ou false.
+ *
+ * Exportada porque e a UNICA deteccao do nucleo que acerta nos dois sistemas.
+ * No Unix, `command` e builtin do shell: `spawnSync("command", ...)` sem shell
+ * da ENOENT para QUALQUER binario, e quem confiar nisso conclui que nada esta
+ * instalado. O `sh -c` aqui e o que faz o builtin existir.
+ */
+export function binExiste(cmd) {
   if (cacheBin.has(cmd)) return cacheBin.get(cmd);
   const r =
     process.platform === "win32"

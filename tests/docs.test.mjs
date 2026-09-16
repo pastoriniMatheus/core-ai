@@ -13,7 +13,7 @@
 import { readFileSync, readdirSync, existsSync, rmSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ler = (p) => { try { return readFileSync(join(ROOT, p), "utf8"); } catch { return ""; } };
@@ -247,6 +247,32 @@ console.log("\n=== nenhum nome de cliente, projeto ou maquina em arquivo version
     }
     afirma(`nenhum nome especifico (${proibidos.length} padroes locais)`, !achados.length, achados.slice(0, 6).join(" | "));
   }
+}
+
+console.log("\n=== deteccao de binario funciona nos dois sistemas ===");
+// `command` e builtin do shell. `spawnSync("command", ["-v", x])` sem shell da
+// ENOENT no Unix para QUALQUER binario — e quem confiar nisso conclui que nada
+// esta instalado. Aconteceu em externa.mjs, testado so no Windows: no Linux o
+// diagnostico dizia "CLI nao instalada" com ela no PATH, e `conferir` e
+// `servidor subir` recusavam com instalacao sadia. Achado por um colaborador.
+{
+  // Estatico: a classe do erro nao pode voltar em NENHUM script. So codigo,
+  // nao comentario — o comentario que explica o bug cita o padrao.
+  const r = spawnSync("git", ["grep", "-n", "-E", 'spawnSync\\(\\s*"(command|type|hash|alias)"', "--", "*.mjs"],
+    { cwd: ROOT, encoding: "utf8", timeout: 20000 });
+  const linhas = (r.stdout || "").split("\n").filter((l) => {
+    if (!l) return false;
+    const codigo = l.split(":").slice(2).join(":").trim();
+    return !codigo.startsWith("//") && !codigo.startsWith("*");
+  });
+  afirma("nenhum spawnSync de builtin de shell sem shell", !linhas.length, linhas.slice(0, 3).join(" | "));
+
+  // Dinamico: a deteccao que o nucleo exporta acha o proprio node, aqui.
+  const url = pathToFileURL(join(ROOT, "plugins", "core", "hooks", "lib", "detect.mjs")).href;
+  const d = spawnSync(process.execPath, ["--input-type=module", "-e",
+    `import { binExiste } from ${JSON.stringify(url)}; process.stdout.write(binExiste("node") ? "achou" : "NAO");`],
+    { encoding: "utf8", timeout: 20000 });
+  afirma("binExiste acha o node nesta plataforma", (d.stdout || "").trim() === "achou", (d.stderr || d.stdout || "").slice(0, 120));
 }
 
 console.log("\n=== versões coerentes ===");

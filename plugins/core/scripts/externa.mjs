@@ -50,6 +50,7 @@ if (!NUCLEO) { console.error("\n  nao achei o nucleo (hooks/hooks.json) a partir
 const libUrl = (n) => pathToFileURL(join(NUCLEO, "hooks", "lib", n)).href;
 const { DEFAULTS } = await import(libUrl("config.mjs"));
 const ext = await import(libUrl("externa.mjs"));
+const { binExiste } = await import(libUrl("detect.mjs"));
 
 function cfgExterna() {
   const base = DEFAULTS.externa;
@@ -63,12 +64,15 @@ const INDICE = join(PROJETO, cfg.indice);
 function roda(bin, argv, opts = {}) {
   return spawnSync(bin, argv, { encoding: "utf8", timeout: 60000, windowsHide: true, cwd: PROJETO, ...opts });
 }
-function temBin(bin) {
-  const q = process.platform === "win32" ? "where" : "command";
-  const a = process.platform === "win32" ? [bin] : ["-v", bin];
-  const r = spawnSync(q, a, { encoding: "utf8", timeout: 8000, windowsHide: true });
-  return r.status === 0 && Boolean((r.stdout || "").trim());
-}
+// A deteccao vem de lib/detect.mjs, e nao de uma copia local.
+//
+// A copia que existia aqui fazia `spawnSync("command", ["-v", bin])` no Unix.
+// `command` e builtin do shell, nao executavel: sem shell, ENOENT para TODO
+// binario. Consequencia no Linux: o diagnostico dizia "CLI nao instalada" com
+// ela no PATH, e `conferir` e `servidor subir` recusavam com instalacao sadia.
+// Testado so no Windows, aberto no Linux — achado por um colaborador, e e a
+// setima vez do mesmo padrao neste projeto.
+const temBin = (bin) => Boolean(binExiste(bin));
 
 // --------------------------------------------------------------- estado
 //

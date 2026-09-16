@@ -1,9 +1,9 @@
 # O que falta
 
-Estado em 16/09/2026, versão **0.7.5**. Nada aqui é bug conhecido: são coisas
+Estado em 16/09/2026, versão **0.7.6**. Nada aqui é bug conhecido: são coisas
 **nunca exercitadas** e decisões adiadas com motivo.
 
-O núcleo passa 217 testes de guarda, 29 de documentação e 25/25 na aceitação
+O núcleo passa 217 testes de guarda, 31 de documentação e 25/25 na aceitação
 com sessões reais do Claude Code. Isso prova o que foi testado — não o que não
 foi, e esta página existe para que a diferença entre as duas coisas fique visível.
 
