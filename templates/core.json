@@ -18,7 +18,7 @@
     "//": "Bloqueia o encerramento se houve edicao de codigo sem teste rodado depois.",
     "enabled": true,
     "//testPatterns": "Acrescente o comando de teste deste projeto se ele nao estiver na lista padrao. Uma lista aqui SUBSTITUI a padrao - inclua tambem o que ja funcionava. Nao use null: sem esta chave, herda os 19 padroes.",
-    "//projectCheck": "Build/typecheck de PROJETO INTEIRO, rodado uma vez antes de encerrar. E aqui que Rust, Java, C# e o typecheck de TS sao cobertos - o verificador por arquivo nao alcanca essas linguagens. Ex: [\"cargo check\", \"npx tsc --noEmit\"]",
+    "//projectCheck": "Comandos de PROJETO INTEIRO que o nucleo roda ele mesmo, uma vez, antes de encerrar. Build/typecheck (Rust, Java, C#, tsc - o verificador por arquivo nao alcanca) E o comando de teste real: um comando daqui que casa testPatterns e passa VALE COMO PROVA, mesmo que o agente nao tenha rodado teste nenhum. testPatterns = o agente disse que testou; projectCheck = o nucleo testou. Ex: [\"npx vitest run\", \"npx tsc --noEmit\"]",
     "projectCheck": []
   },
 

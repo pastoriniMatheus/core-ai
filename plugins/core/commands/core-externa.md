@@ -25,7 +25,7 @@ Há uma escolha de topologia — **local** ou **equipe** — mas ela não é a p
 pergunta, e enquadrá-la como "onde roda?" leva à resposta errada. A escolha real
 é de **modelo de credencial**, e a pergunta é esta:
 
-> **Esta conta Google é descartável e dedicada — sem Drive nem Gmail
+> **Esta é uma conta Google descartável e dedicada — sem Drive nem Gmail
 > corporativo, e fora do SSO da empresa?**
 
 O arquivo de autenticação do NotebookLM é uma credencial de **conta inteira**,
@@ -97,7 +97,7 @@ ali, ele é silencioso, e está explicado lá.
 
 Em poucas linhas, e sem enfeitar:
 
-- **o agente consulta; quem alimenta é o usuário.** Não é limitação técnica: é
+- **o agente consulta; quem alimenta é humano.** Não é limitação técnica: é
   a decisão de desenho. "Mande só o que compensa" é julgamento, e julgamento não
   vira garantia por estar escrito no prompt — então o verbo saiu do agente.
 - **quatro portas** decidem o que pode subir, todas por comando: FORA, GRANDE,

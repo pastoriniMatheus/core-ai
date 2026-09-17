@@ -1,9 +1,9 @@
 # O que falta
 
-Estado em 16/09/2026, versão **0.7.6**. Nada aqui é bug conhecido: são coisas
+Estado em 17/09/2026, versão **0.8.0**. Nada aqui é bug conhecido: são coisas
 **nunca exercitadas** e decisões adiadas com motivo.
 
-O núcleo passa 217 testes de guarda, 31 de documentação e 25/25 na aceitação
+O núcleo passa 229 testes de guarda, 36 de documentação e 25/25 na aceitação
 com sessões reais do Claude Code. Isso prova o que foi testado — não o que não
 foi, e esta página existe para que a diferença entre as duas coisas fique visível.
 
@@ -49,6 +49,15 @@ o núcleo passaria, ou a ordem de execução importando de um jeito não previst
 
 **Como fechar:** abrir uma sessão com os dois ativos e confirmar que ambos
 disparam, sem um anular o outro.
+
+**Medido em 17/09/2026, por acidente:** a aceitação roda com o plugin do
+usuário (escopo `user`) **e** com o clone instalado no projeto de teste — o
+mesmo hook, duas cópias, no mesmo evento. Enquanto o plugin instalado estava em
+0.7.3 e o clone em 0.8.0, o cenário "prova pelo núcleo" falhou: o `stop-verify`
+novo liberou, o antigo bloqueou, e no `Stop` **qualquer** bloqueio vence. Duas
+lições: hooks somam mesmo (confirmado), e a aceitação só é limpa com o plugin
+atualizado (`claude plugin update core@agent-core`) — o que ela não diz
+sozinha. Falta ainda o caso com hook de **outra** ferramenta.
 
 ### O modo `--global` em uso real
 
@@ -219,6 +228,24 @@ nisso — e nenhuma se apoia. O portão cobre os dois caminhos justamente por is
 **Como fechar:** uma sessão de teste com o MCP ligado, medindo `/context` antes
 e depois. Se for controlável, o MCP volta à mesa para uso interativo.
 
+### Executor autônomo por fases (ralph) — estudado, não construído
+
+O `beer-and-code-harness` roda cada fase de um plano numa sessão `claude -p`
+nova, sem perguntas, com quatro portas mecânicas depois do fato e um commit por
+fase. Do harness entrou o que cabia na tese do núcleo — painel, marcador
+`[fase]`, âncoras de drift, `projectCheck` como prova — tudo portado em Node,
+sem dependência no projeto deles.
+
+O executor em si **não entrou**. O estudo de decisão está em
+[`ESTUDO-ralph.md`](ESTUDO-ralph.md): os dois modos, onde concordam (mais do
+que parece), a diferença real (*quando* o humano decide), custo por eixo, e
+três opções. Recomendação: **só núcleo agora**; um `ralph.mjs` nativo para
+fases já alinhadas **quando** o baseline mostrar que a espera pelo humano é o
+gargalo — e não o retrabalho; migrar para o modelo ralph, **não**.
+
+O que muda a decisão está escrito lá. O primeiro item é a medição da seção
+abaixo — outra razão para ela acontecer.
+
 ### mattpocock/skills — não entra
 
 Quando a escolha foi feita, o núcleo não tinha skills próprias. Hoje `fase`,
@@ -296,6 +323,7 @@ cria o próximo bug, e só revisão pega.
 1. **Mac ou Linux** — o maior buraco, e o mais barato de fechar
 2. **Baseline num projeto real** — desbloqueia julgar qualquer mudança seguinte
 3. **MCP de verdade** — precisa só da credencial que já existe
-4. **Convivência com o Orca**
+4. **Convivência com o Orca** — a statusline já encadeia com a dele; os hooks ainda não foram vistos juntos
 5. **Graphify local** — a ferramenta que mais acrescentaria
 6. **Primeira camada de projeto** — depois do baseline, nunca antes
+7. **Executor autônomo (ralph nativo)** — só depois do item 2, e só se ele apontar para lá

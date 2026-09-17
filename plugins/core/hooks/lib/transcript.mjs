@@ -4,13 +4,14 @@
 // a mesma pergunta — "houve edicao de codigo sem prova depois?" — e uma unica
 // implementacao evita que as duas respostas divirjam.
 
-import { readFileSync, statSync, openSync, readSync, closeSync, existsSync } from "node:fs";
+import { readFileSync, statSync, openSync, readSync, closeSync, existsSync, readdirSync } from "node:fs";
 import { extname, join, isAbsolute } from "node:path";
+import { homedir } from "node:os";
 import { arquivosEscritosPorShell } from "./escrita-shell.mjs";
 
 const MAX_TAIL_BYTES = 4 * 1024 * 1024; // transcripts longos: le so o final
 
-function readTail(path) {
+export function readTail(path) {
   const size = statSync(path).size;
   if (size <= MAX_TAIL_BYTES) return readFileSync(path, "utf8");
   const fd = openSync(path, "r");
@@ -115,4 +116,29 @@ export function estadoDaProva(path, cfg, cwd) {
     falouDepois: ultimaFala > ultimaEdicao,
     arquivos: vivos,
   };
+}
+
+/**
+ * O transcript da sessao corrente deste projeto.
+ *
+ * O Claude Code guarda cada sessao em ~/.claude/projects/<slug>/<id>.jsonl, e o
+ * slug e o cwd com todo caractere nao alfanumerico trocado por "-":
+ *   C:/Users/x/desktop/agente  ->  C--Users-x-desktop-agente
+ *
+ * Devolve o .jsonl mais recente desse diretorio, ou null. Quem chama de fora
+ * de um hook (painel, statusline) nao recebe `transcript_path` no evento — e
+ * isto que o substitui.
+ */
+export function transcriptDaSessao(cwd) {
+  const slug = String(cwd || process.cwd()).replace(/[^A-Za-z0-9]/g, "-");
+  const dir = join(homedir(), ".claude", "projects", slug);
+  if (!existsSync(dir)) return null;
+  let melhor = null;
+  for (const f of readdirSync(dir)) {
+    if (!f.endsWith(".jsonl")) continue;
+    const p = join(dir, f);
+    const m = statSync(p).mtimeMs;
+    if (!melhor || m > melhor.m) melhor = { p, m };
+  }
+  return melhor?.p || null;
 }

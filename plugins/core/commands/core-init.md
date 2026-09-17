@@ -79,7 +79,7 @@ Escreva `.claude/core.json` com o que foi descoberto e respondido:
 ```json
 {
   "stopVerify": {
-    "projectCheck": ["<build ou typecheck, se a linguagem precisar>"],
+    "projectCheck": ["<o comando de teste REAL deste projeto>", "<build ou typecheck, se a linguagem precisar>"],
     "testPatterns": ["<o comando de teste REAL deste projeto>"]
   },
   "publish": {
@@ -95,12 +95,48 @@ testes de um jeito próprio — dentro de container, por um `make` — e isso n�
 estiver aqui, ele bloqueia **mesmo depois** de o teste ter rodado. É o falso
 positivo mais provável do primeiro dia.
 
+**O comando de teste vai nos dois lugares, e a diferença importa.**
+`testPatterns` é "o agente *disse* que testou": o `stop-verify` procura o
+comando no transcript, e só sabe que ele foi invocado — não se passou.
+`projectCheck` é "o núcleo *testou*": o hook roda o comando ele mesmo, antes
+de encerrar, e um comando de teste que passa ali **é a prova** — mesmo que o
+agente não tenha rodado teste nenhum. O agente não consegue fingir verde. Se a
+suite for lenta demais para rodar a cada encerramento, deixe em `projectCheck`
+só o subconjunto rápido, ou só o typecheck.
+
 Credencial de tracker vai pelo `tracker-setup.mjs`, nunca escrita à mão: ele
 testa a conexão antes de gravar, e recusa gravar se o `.gitignore` do
 repositório não proteger o arquivo.
 
 Preencha também a seção "Este projeto" do `CLAUDE.md`, se ela ainda tiver os
 placeholders `<comando>`.
+
+## 4b. A statusline do núcleo, se ele quiser
+
+Ofereça — e só instale com "sim":
+
+> Quer a linha do núcleo no rodapé do Claude Code? Ela mostra fase, card, se o
+> stop-verify vai bloquear, e o último bloqueio — sem precisar chamar nada.
+
+Se ele quiser, edite `~/.claude/settings.json` (escopo do **usuário**, nunca o
+do projeto — statusline é preferência pessoal):
+
+1. Se já existe `statusLine.command`, guarde o valor em `statusLine.anterior`.
+   A nossa **encadeia**, não substitui: a linha final é `<anterior> │ <núcleo>`.
+2. Descubra o caminho **absoluto** do script — a statusline roda fora de
+   qualquer sessão, sem variável de ambiente do núcleo:
+
+   ```bash
+   echo $AGENT_CORE_ROOT/scripts/statusline.mjs
+   ```
+
+   Escreva `statusLine.type = "command"` e `statusLine.command` = `node`
+   seguido desse caminho.
+3. Diga como desfazer: apagar `statusLine`, ou devolver `anterior` a `command`.
+
+O mesmo retrato existe sob demanda (`/core-painel`) e ao vivo, noutra janela
+(`node $AGENT_CORE_ROOT/scripts/painel.mjs`). As três leem o transcript; nada
+aqui cria estado nem hook.
 
 ## 5. Construa o grafo, se o Graphify entrou
 
@@ -160,7 +196,8 @@ hook ligado" e "nenhuma skill instalada" não são.
 Em poucas linhas:
 
 - **o que passou a valer**: verificação a cada edição, prova antes de encerrar,
-  e PR e movimento de card pedindo autorização explícita — toda vez
+  e PR e movimento de card pedindo autorização explícita, por PR e por card,
+  toda vez
 - **o que continua sendo dele**: fechar card, que nenhum agente faz
 - **o que ficou pendente**: aceitar o diálogo de confiança do workspace (sem
   isso as regras de permissão são ignoradas), e qualquer ferramenta que ele não

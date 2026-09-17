@@ -5,6 +5,10 @@
     "testPatterns": [
       "node tests/",
       "aceitacao[.]mjs"
+    ],
+    "//projectCheck": "O nucleo roda a suite de hooks antes de encerrar; se ela passa, e prova - o agente nao precisa ter rodado nada. A aceitacao fica de fora (4 min, sessoes reais).",
+    "projectCheck": [
+      "node tests/hooks.test.mjs"
     ]
   },
   "publish": {

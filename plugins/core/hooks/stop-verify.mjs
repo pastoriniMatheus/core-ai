@@ -30,6 +30,21 @@ run(async (input) => {
   // Rust, Java, C# e o typecheck de TS nao tem verificacao por arquivo
   // confiavel: o compilador precisa do projeto todo. Pagar esse custo a cada
   // edicao seria inviavel, entao ele e pago UMA vez, aqui.
+  //
+  // Um projectCheck que E um comando de teste e que passou vale como prova.
+  //
+  // Antes, `provado` so vinha do transcript: "um comando de teste APARECEU
+  // depois da ultima edicao". Isso confia no agente — nao se sabe se o teste
+  // passou, so que ele foi invocado. Aqui o NUCLEO roda o teste, e o agente
+  // nao consegue fingir verde. E a mesma ideia do gate 2 do ralph (bc-harness):
+  // a suite roda fora da sessao do agente.
+  //
+  // Sem opcao nova: se o comando casa `testPatterns`, ele e um teste. O
+  // /core-setup passa a por o comando de teste real aqui.
+  const ehTeste = (c) =>
+    cfg.stopVerify.testPatterns.some((p) => c.toLowerCase().includes(p.toLowerCase()));
+  let provouPeloNucleo = false;
+
   for (const cmd of cfg.stopVerify.projectCheck) {
     const r = spawnSync(cmd, {
       cwd: input.cwd,
@@ -38,7 +53,7 @@ run(async (input) => {
       timeout: cfg.stopVerify.projectCheckTimeoutMs,
       windowsHide: true,
     }, { aoFalhar: "bloqueia" });
-    if (r.status === 0) continue; // passou
+    if (r.status === 0) { if (ehTeste(cmd)) provouPeloNucleo = true; continue; } // passou
 
     // Timeout nao e aprovacao. "Nao terminei de verificar" nunca deve ser
     // relatado como "esta tudo certo" — o silencio aqui seria a falha mais
@@ -62,7 +77,7 @@ run(async (input) => {
     );
   }
 
-  if (prova.provado) pass();
+  if (prova.provado || provouPeloNucleo) pass();
 
   const lista = prova.arquivos.slice(-10).map((f) => `  - ${f}`).join("\n");
   block(

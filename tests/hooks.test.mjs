@@ -484,6 +484,79 @@ check(
   "block" // shell existe e devolve erro: reprova de verdade, e correto avisar
 );
 
+// O nucleo rodou o teste ELE MESMO: isso e prova, mesmo que o agente nunca
+// tenha invocado teste nenhum no transcript. E o agente nao consegue fingir
+// verde — o exit code e do processo do hook, nao de uma string que ele
+// escreveu. (Gate 2 do ralph, no bc-harness: a suite roda fora da sessao.)
+{
+  const comTeste = (nome, projectCheck) => {
+    const dir = join(TMP, nome, ".claude");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "core.json"), JSON.stringify({
+      stopVerify: { projectCheck, testPatterns: ["node --version", "exit 1"] },
+    }));
+    return join(TMP, nome);
+  };
+  check(
+    "projectCheck verde que casa testPatterns vale como prova (agente nao testou)",
+    "stop-verify.mjs",
+    { cwd: comTeste("pc-prova", ["node --version"]), transcript_path: editouSemTestar },
+    "pass"
+  );
+  check(
+    "projectCheck vermelho que casa testPatterns continua bloqueando",
+    "stop-verify.mjs",
+    { cwd: comTeste("pc-prova-falha", [falha]), transcript_path: editouSemTestar },
+    "block"
+  );
+  check(
+    "projectCheck verde que NAO e teste nao vale como prova",
+    "stop-verify.mjs",
+    { cwd: projeto("pc-nao-teste", ["node --version"]), transcript_path: editouSemTestar },
+    "block"
+  );
+}
+
+console.log("\n=== painel: a sessao como os hooks a veem ===");
+// Uma fonte (o transcript), tres superficies. O que se testa aqui e a fonte:
+// se retrato() le errado, as tres superficies mentem juntas.
+{
+  const { retrato, emLinha } = await import(pathToFileURL(join(HOOKS, "lib", "painel.mjs")).href);
+  const { loadConfig } = await import(pathToFileURL(join(HOOKS, "lib", "config.mjs")).href);
+  const dir = join(TMP, "painel");
+  mkdirSync(join(dir, "src"), { recursive: true });
+  const arq = join(dir, "src", "x.ts");
+  writeFileSync(arq, "export const x = 1;\n");
+  const jsonl = (nome, eventos) => {
+    const p = join(dir, nome);
+    writeFileSync(p, eventos.map((e) => JSON.stringify(e)).join("\n") + "\n");
+    return p;
+  };
+  const t = jsonl("p1.jsonl", [
+    { message: { role: "user", content: [{ type: "text", text: "ataque CRM-777" }] } },
+    { message: { role: "assistant", content: [{ type: "text", text: "[fase] EXPLORAR" }] } },
+    { message: { role: "assistant", content: [{ type: "text", text: "Vamos.\n\n[fase] IMPLEMENTAR\n" }] } },
+    { message: { role: "assistant", content: [{ type: "tool_use", id: "1", name: "Edit", input: { file_path: arq } }] } },
+    // "[core]" no MEIO de um tool_result e um cat no codigo do hook, nao um bloqueio.
+    { message: { role: "user", content: [{ type: "tool_result", tool_use_id: "1", content: "1  // hook\n2  denyTool(`[core] Portao ...`)" }] } },
+    { message: { role: "assistant", content: [{ type: "tool_use", id: "2", name: "Bash", input: { command: "gh pr create" } }] } },
+    { timestamp: "2026-01-01T14:02:00.000Z", message: { role: "user", content: [{ type: "tool_result", tool_use_id: "2", content: "[core] Portao de publicacao: `gh pr create`\n\n  Antes de abrir PR, confirme." }] } },
+    { message: { role: "assistant", content: [{ type: "tool_use", id: "3", name: "Bash", input: { command: 'notebooklm ask "qual a norma"' } }] } },
+  ]);
+  const r = retrato({ transcriptPath: t, cwd: dir, cfg: loadConfig(dir) });
+  const ok = (nome, cond, det = "") => { if (cond) { passed++; console.log(`  PASS  ${nome}`); } else { failed++; console.log(`  FAIL  ${nome}  ${det}`); } };
+  ok("le a ULTIMA fase declarada", r.fase === "IMPLEMENTAR", r.fase);
+  ok("acha o card citado", r.card === "CRM-777", r.card);
+  ok("ve a edicao sem prova (o que o stop-verify vai ver)", r.prova.editouCodigo && !r.prova.provado);
+  ok("so conta bloqueio ancorado no inicio do tool_result", r.bloqueios.length === 1, String(r.bloqueios.length));
+  ok("nomeia o hook que bloqueou", r.bloqueios[0]?.hook === "publish", r.bloqueios[0]?.hook);
+  ok("conta consultas a base externa", r.externa.consultas === 1, String(r.externa.consultas));
+  const linha = emLinha(r);
+  ok("a linha da statusline resume tudo", /IMPLEMENTAR .* CRM-777 .* prova ✗ 1 arq .* publish bloqueou/.test(linha), linha);
+  const vazio = retrato({ transcriptPath: join(dir, "nao-existe.jsonl"), cwd: dir, cfg: loadConfig(dir) });
+  ok("sem transcript devolve retrato vazio, nao erro", vazio.fase === null && !vazio.prova.editouCodigo);
+}
+
 console.log("\n=== checkpoint: onde a sessao parou ===");
 // Depender de alguem lembrar de anotar onde parou e a mesma aposta que este
 // nucleo recusa no resto: funciona quase sempre, e "quase" e onde o trabalho
@@ -503,7 +576,8 @@ console.log("\n=== checkpoint: onde a sessao parou ===");
   const comCard = jsonl("cp1.jsonl", [
     { message: { role: "user", content: [{ type: "text", text: "ataque CRM-777 por favor" }] } },
     { message: { role: "assistant", content: [{ type: "tool_use", name: "Edit", input: { file_path: arq } }] } },
-    { message: { role: "assistant", content: [{ type: "text", text: "Parei na fase PROVAR, falta o teste RED." }] } },
+    { message: { role: "assistant", content: [{ type: "text", text: "[fase] IMPLEMENTAR" }] } },
+    { message: { role: "assistant", content: [{ type: "text", text: "Parei na fase PROVAR, falta o teste RED.\n\n[fase] PROVAR" }] } },
   ]);
 
   const rodaCp = (entrada) =>
@@ -525,6 +599,7 @@ console.log("\n=== checkpoint: onde a sessao parou ===");
   afirmaCp("grava checkpoint quando houve edicao", md.length > 0);
   afirmaCp("acha o card citado na conversa", md.includes("CRM-777"));
   afirmaCp("registra onde parou", md.includes("fase PROVAR"));
+  afirmaCp("grava a ultima fase declarada (marcador [fase])", md.includes("Fase: PROVAR"), md.slice(0, 200));
   afirmaCp("acusa falta de prova", md.includes("SEM PROVA"));
 
   // O identificador NAO pode vir de caminho de arquivo: um diretorio chamado

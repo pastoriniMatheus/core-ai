@@ -76,5 +76,14 @@ O fluxo normal e EXPLORAR -> ALINHAR -> IMPLEMENTAR -> PROVAR, mas voltar e comu
 e saudavel. Descobriu na implementacao que o requisito era ambiguo? Volte para
 ALINHAR. Nao tente adivinhar e seguir.
 
-Anuncie a fase quando ela mudar, em uma linha. O usuario precisa saber se voce
-esta perguntando ou executando.
+Anuncie a fase quando ela mudar, com este marcador, **numa linha sozinha**:
+
+```
+[fase] IMPLEMENTAR
+```
+
+O usuario precisa saber se voce esta perguntando ou executando — e o nucleo
+tambem: o painel (`/core-painel`, a statusline) e o checkpoint da sessao leem
+esse marcador do transcript. E texto puro de proposito: nao depende de
+ferramenta nenhuma, funciona em sessao `-p`, e sobrevive ao transcript. Sem
+ele, a fase aparece como "nao declarada".

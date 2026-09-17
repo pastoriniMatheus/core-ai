@@ -10,6 +10,9 @@ O invariante que amarra tudo o que vem abaixo:
 > **Se a base externa sumisse hoje, a equipe não perderia nada além de tempo de
 > busca.**
 
+E o segundo invariante, o que define o papel de cada um: **o agente consulta;
+quem alimenta é humano.**
+
 Se apagá-la doeria, alguém pôs lá dentro algo que devia estar no repositório —
 e isso é detectável olhando `docs/base-externa.md`. A base guarda material de
 **terceiro**, grande e estável, que ninguém vai versionar. Não guarda o que a

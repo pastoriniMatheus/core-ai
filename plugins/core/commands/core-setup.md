@@ -54,7 +54,7 @@ O que você precisa saber, no fim:
     "tokenEnv": "PLANE_API_TOKEN"
   },
   "stopVerify": {
-    "projectCheck": ["npx tsc --noEmit"],
+    "projectCheck": ["npx vitest run", "npx tsc --noEmit"],
     "testPatterns": ["vitest", "rspec"]
   }
 }
@@ -62,6 +62,13 @@ O que você precisa saber, no fim:
 
 `trackerPatterns` são regex testadas contra o comando inteiro. Escape o ponto
 (`[.]`) para não casar com qualquer caractere.
+
+O comando de teste real vai em `projectCheck` **e** em `testPatterns`.
+`testPatterns` é "o agente disse que testou" (o comando apareceu no
+transcript); `projectCheck` é "o núcleo testou" (o hook roda o comando antes de
+encerrar, e se um comando de teste passa ali, isso é a prova — o agente não
+consegue fingir verde). Suite lenta? Deixe em `projectCheck` só o subconjunto
+rápido.
 
 ### 4. Escreva a credencial em `.claude/settings.local.json` — NÃO versionado
 
@@ -98,7 +105,7 @@ node $AGENT_CORE_ROOT/scripts/doctor.mjs "."
 
 Diga em duas linhas o que ficou configurado e **o que vai mudar no dia a dia**:
 que a partir de agora PR e movimento de card pedem autorização explícita, e que
-o estado final do card continua sendo movido à mão por quem revisa.
+o estado final do card não é do agente: quem revisa move à mão, depois de olhar.
 
 Não faça commit. Configuração de equipe é decisão do usuário — mostre o diff e
 pergunte.

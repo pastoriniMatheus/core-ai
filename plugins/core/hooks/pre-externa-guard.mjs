@@ -341,7 +341,7 @@ run(async (input) => {
   denyTool(
     `[core] Portao da base externa: \`${texto.slice(0, 120)}\`\n\n` +
       `  motivo: ${aut.motivo}\n\n` +
-      `O agente CONSULTA a base; quem alimenta e humano. Enviar e irreversivel e\n` +
+      `O agente CONSULTA; quem alimenta e humano. Enviar e irreversivel e\n` +
       `sai sob a conta de alguem — falso positivo custa um prompt, falso negativo\n` +
       `e permanente.\n\n` +
       `Antes de propor um envio, as QUATRO portas — todas verificaveis por comando,\n` +

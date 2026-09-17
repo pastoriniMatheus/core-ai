@@ -35,7 +35,7 @@ function readTail(path) {
  * de casar sem avisar. Por isso o identificador é procurado em QUALQUER grupo
  * capturado, e não numa posição fixa.
  */
-function cardsCitados(bruto, padrao) {
+export function cardsCitados(bruto, padrao) {
   const re = new RegExp(padrao || "(^|[^A-Za-z0-9])([A-Z]{2,10}-[0-9]+)([^A-Za-z0-9]|$)", "g");
   const ehCard = /^[A-Z]{2,10}-[0-9]+$/;
   const vistos = [];
@@ -74,6 +74,7 @@ export function montar({ transcriptPath, cwd, cfg = {} }) {
   // próxima sessão apontando para um card que não existe.
   const conversa = [];
   let ultimoTexto = "";
+  let fase = null;
 
   const ehCodigo = (f) =>
     f && (cfg.codeExtensions || []).includes(extname(f).toLowerCase());
@@ -105,6 +106,10 @@ export function montar({ transcriptPath, cwd, cfg = {} }) {
         if (b?.type === "text" && b.text?.trim()) {
           ultimoTexto = b.text.trim();
           conversa.push(b.text);
+          // O marcador da skill `fase`, em texto puro. A retomada da proxima
+          // sessao ganha "em que fase eu estava" sem custar nada a mais.
+          const m = b.text.match(/^\s*\[fase\]\s+(EXPLORAR|ALINHAR|IMPLEMENTAR|PROVAR)\b/mi);
+          if (m) fase = m[1].toUpperCase();
         }
         if (b?.type !== "tool_use") continue;
         const f = b.input?.file_path;
@@ -125,6 +130,7 @@ export function montar({ transcriptPath, cwd, cfg = {} }) {
   return {
     em: new Date().toISOString(),
     card: cards[0] || null,
+    fase,
     branch: git(["rev-parse", "--abbrev-ref", "HEAD"], cwd) || null,
     ultimoCommit: git(["log", "-1", "--format=%h %s"], cwd) || null,
     naoCommitado: git(["status", "--short"], cwd).split("\n").filter(Boolean).length,
@@ -140,6 +146,7 @@ export function montar({ transcriptPath, cwd, cfg = {} }) {
 export function emTexto(c) {
   const l = [];
   l.push(`Sessão anterior: ${new Date(c.em).toLocaleString("pt-BR")}`);
+  if (c.fase) l.push(`Fase: ${c.fase}`);
   if (c.card) l.push(`Card: ${c.card}`);
   if (c.branch) l.push(`Branch: ${c.branch}`);
   if (c.ultimoCommit) l.push(`Último commit: ${c.ultimoCommit}`);

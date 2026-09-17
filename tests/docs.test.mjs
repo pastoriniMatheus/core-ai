@@ -275,6 +275,40 @@ console.log("\n=== deteccao de binario funciona nos dois sistemas ===");
   afirma("binExiste acha o node nesta plataforma", (d.stdout || "").trim() === "achou", (d.stderr || d.stdout || "").slice(0, 120));
 }
 
+console.log("\n=== âncoras de drift ===");
+
+// Regras que vivem duplicadas DE PROPÓSITO — a skill precisa ser autocontida, o
+// hook precisa explicar o bloqueio sem depender da skill, o comando de setup
+// precisa dizer o que vai mudar. Duplicação deliberada tem um custo: uma cópia
+// é reescrita e as outras não, e ninguém acusa. Cada âncora abaixo é uma frase
+// que TEM de aparecer em todas as cópias do grupo. Mudou a regra? Mude as
+// cópias juntas — e a âncora.
+//
+// Ideia portada do check-init-drift do bc-harness. A comparação normaliza
+// acento, caixa, negrito e quebra de linha: a skill escreve "à mão" e o hook
+// escreve "a mao", e a regra é a mesma.
+const plano = (t) => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .toLowerCase().replace(/[*`_]/g, "").replace(/\s+/g, " ");
+const ANCORAS = [
+  { frase: "quem revisa move a mao, depois de olhar", arquivos: [
+    "plugins/core/skills/entregar-trabalho/SKILL.md", "plugins/core/skills/atacar-card/SKILL.md",
+    "plugins/core/commands/core-setup.md", "plugins/core/hooks/pre-publish-guard.mjs"] },
+  { frase: "por PR e por card, toda vez", arquivos: [
+    "plugins/core/skills/entregar-trabalho/SKILL.md", "plugins/core/skills/atacar-card/SKILL.md",
+    "plugins/core/commands/core-init.md", "plugins/core/hooks/pre-publish-guard.mjs"] },
+  { frase: "o agente consulta; quem alimenta e humano", arquivos: [
+    "plugins/core/skills/base-externa/SKILL.md", "plugins/core/commands/core-externa.md",
+    "scripts/externa.mjs", "plugins/core/hooks/pre-externa-guard.mjs"] },
+  { frase: "credencial de conta inteira", arquivos: [
+    "plugins/core/commands/core-externa.md", "plugins/core/commands/core-init.md", "scripts/externa.mjs"] },
+  { frase: "conta google descartavel", arquivos: [
+    "plugins/core/commands/core-externa.md", "plugins/core/commands/core-init.md", "scripts/externa.mjs"] },
+];
+for (const { frase, arquivos } of ANCORAS) {
+  const faltam = arquivos.filter((a) => !plano(ler(a)).includes(plano(frase)));
+  afirma(`"${frase}" em ${arquivos.length} cópias`, !faltam.length, `falta em: ${faltam.join(", ")}`);
+}
+
 console.log("\n=== versões coerentes ===");
 
 // A versão é o único sinal que `claude plugin update` usa. Se os dois arquivos

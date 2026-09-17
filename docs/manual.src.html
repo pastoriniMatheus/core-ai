@@ -436,10 +436,10 @@
     <p class="standfirst">Um núcleo genérico que organiza as diretrizes do agente por <strong>mecanismo de execução</strong> — não por ferramenta. Tudo que pode virar hook vira hook; só o que sobra vira instrução.</p>
     <div class="status-row">
       <span class="chip good">Camada 0 implementada</span>
-      <span class="chip good">217/217 unidade</span>
+      <span class="chip good">229/229 unidade</span>
       <span class="chip good">19/19 aceita&ccedil;&atilde;o</span>
       <span class="chip">8 skills</span>
-      <span class="chip">7 comandos</span>
+      <span class="chip">8 comandos</span>
       <span class="chip">Node 18+, zero dependências</span>
     </div>
   </header>
@@ -457,6 +457,7 @@
       <li><a href="#tracker">Do card à entrega</a></li>
       <li><a href="#instalar-ferramentas">Ferramentas externas</a></li>
       <li><a href="#medir">Medir</a></li>
+      <li><a href="#painel">O painel</a></li>
       <li><a href="#rollout">Rollout</a></li>
       <li><a href="#validacao">Validado em sessão real</a></li>
       <li><a href="#ferramentas">Ferramentas externas</a></li>
@@ -639,6 +640,7 @@ prefixado com CORE_DEP_OK=1.</code></pre>
   }
 }</code></pre>
       <p>Barato por arquivo a cada edição; caro por projeto uma vez no fim. O custo é pago onde ele não atrapalha o fluxo.</p>
+      <p><strong>E o comando de teste real também vai aqui.</strong> <code>testPatterns</code> é &ldquo;o agente <em>disse</em> que testou&rdquo;: o hook procura o comando no transcript e só sabe que ele foi invocado, não se passou. <code>projectCheck</code> é &ldquo;o núcleo <em>testou</em>&rdquo;: o hook roda o comando ele mesmo, e um comando de teste que passa ali <strong>é a prova</strong> &mdash; mesmo que o agente não tenha rodado teste nenhum. O exit code é do processo do hook; o agente não consegue fingir verde. (É a mesma ideia da segunda porta do ralph, no <code>beer-and-code-harness</code>: a suíte roda fora da sessão do agente.)</p>
 
       <div class="callout warn">
         <p><strong>Hook lento anula o ganho que deveria proteger.</strong> Por isso o escopo é o <em>arquivo editado</em>, nunca o projeto: timeout de 12&nbsp;s e verificação de um arquivo só. Typecheck de projeto inteiro pertence ao <code>Stop</code>.</p>
@@ -660,7 +662,9 @@ prefixado com CORE_DEP_OK=1.</code></pre>
             <tr><td>YAML e check de projeto</td><td>YAML válido e quebrado, projectCheck que passa, falha e não deve rodar</td><td class="num-cell">6</td></tr>
             <tr><td>Configuração e degradação</td><td>ferramenta ausente não bloqueia; aviso de projeto não configurado</td><td class="num-cell">3</td></tr>
             <tr><td>Portão por MCP</td><td>tracker e PR via MCP, leitura passa, Done bloqueado, token one-shot e vencido</td><td class="num-cell">9</td></tr>
-            <tr><td colspan="2" style="color:var(--accent-ink);font-weight:600">Total</td><td class="num-cell" style="color:var(--accent-ink);font-weight:600">217 / 217</td></tr>
+            <tr><td>projectCheck como prova</td><td>teste verde rodado pelo núcleo vale; vermelho bloqueia; check que não é teste não vale</td><td class="num-cell">3</td></tr>
+            <tr><td>Painel</td><td>última fase, card, edição sem prova, bloqueio ancorado no início, hook nomeado, consultas, linha da statusline, sem transcript</td><td class="num-cell">8</td></tr>
+            <tr><td colspan="2" style="color:var(--accent-ink);font-weight:600">Total</td><td class="num-cell" style="color:var(--accent-ink);font-weight:600">229 / 229</td></tr>
           </tbody>
         </table>
       </div>
@@ -950,7 +954,7 @@ node scripts/doctor.mjs    ~/meu-projeto   <span class="c"># confirma</span>
 
       <p>Um comando leva o projeto de &ldquo;plugin instalado&rdquo; a <strong>pleno</strong>: detecta a stack, pergunta <strong>uma vez</strong> o que n&atilde;o d&aacute; para inferir, instala o que voc&ecirc; autorizar, escreve a configura&ccedil;&atilde;o, constr&oacute;i o grafo, congela o baseline e confere no fim. O <code>session-start</code> oferece esse comando sozinho na primeira sess&atilde;o de um projeto ainda n&atilde;o configurado.</p>
 
-      <p>Para configurar uma pe&ccedil;a s&oacute;: <code>/core-setup</code> (projeto), <code>/core-tracker</code> (tracker), <code>/core-ferramentas</code> (ferramentas externas), <code>/core-externa</code> (base de conhecimento externa).</p>
+      <p>Para configurar uma pe&ccedil;a s&oacute;: <code>/core-setup</code> (projeto), <code>/core-tracker</code> (tracker), <code>/core-ferramentas</code> (ferramentas externas), <code>/core-externa</code> (base de conhecimento externa). E <code>/core-painel</code> mostra a sess&atilde;o como os hooks a veem &mdash; <a href="#painel">o painel</a>.</p>
 
       <p>O instalador &eacute; <strong>aditivo</strong>: hooks de outras ferramentas no mesmo evento s&atilde;o preservados, uma skill sua com o mesmo nome n&atilde;o &eacute; sobrescrita, e rodar duas vezes n&atilde;o duplica nada.</p>
 
@@ -996,6 +1000,40 @@ node scripts/baseline.mjs --days 7 --compare antes</code></pre>
         <li><strong>Cache lido</strong> é onde a economia de arquitetura aparece.</li>
       </ul>
       <p>Não há tabela de preço embutida de propósito: preço muda e envelhece errado. O que compara antes e depois é a contagem por categoria.</p>
+    </section>
+
+    <!-- ================================================ 8b. PAINEL -->
+    <section id="painel">
+      <h2><span class="num">OPERAÇÃO</span>Ver a sessão antes do bloqueio</h2>
+      <p class="lede">O <code>doctor</code> torna a instalação visível. Faltava tornar a sessão visível: o usuário só descobria que o <code>stop-verify</code> ia bloquear quando ele bloqueava.</p>
+
+<pre><code>┌─ nucleo ──────────────────────────────────────────────────────────┐
+│ fase      IMPLEMENTAR              card      PROJ-540             │
+│ prova     ✗ 3 arquivo(s) sem teste   → o stop-verify vai bloquear │
+│           a.ts  b.ts  c.mjs                                       │
+│ bloqueios 14:02 publish  Portao de publicacao: ...                │
+│ externa   2 fonte(s) · 0 vencidas · 1 consulta(s) nesta sessao    │
+└───────────────────────────────────────────────────────────────────┘</code></pre>
+
+      <p>A linha de <strong>prova</strong> é o valor central: é o <code>stop-verify</code> <em>antes</em> de bloquear. Card, fase e último bloqueio vêm de graça, porque a fonte é a mesma que os hooks já leem &mdash; <strong>o transcript</strong>. Nada aqui cria arquivo de estado nem hook novo.</p>
+
+      <h3>Uma fonte, três superfícies</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Superfície</th><th>Como</th><th>Quando</th></tr></thead>
+          <tbody>
+            <tr><td><code>/core-painel</code></td><td>um quadro, dentro da sessão</td><td>&ldquo;vai bloquear?&rdquo; antes de encerrar</td></tr>
+            <tr><td><code>node scripts/painel.mjs</code></td><td>ao vivo, noutra janela, a cada 2&nbsp;s (<code>q</code> sai)</td><td>acompanhar uma sessão longa</td></tr>
+            <tr><td>statusline</td><td>uma linha no rodapé do Claude Code; o <code>/core-init</code> oferece instalar</td><td>sempre</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>A statusline <strong>encadeia</strong> com a que já existir (guardada em <code>statusLine.anterior</code>), não substitui &mdash; tirar a statusline de outra ferramenta seria exatamente a sobreposição que o <code>doctor</code> acusa.</p>
+
+      <h3>A fase é texto puro</h3>
+      <p>A skill <code>fase</code> manda o agente anunciar a fase numa linha sozinha: <code>[fase] IMPLEMENTAR</code>. É o único jeito de saber a fase que não depende de ferramenta nenhuma: funciona em sessão <code>-p</code>, sobrevive ao transcript, e o checkpoint da sessão também o lê &mdash; a sessão seguinte ganha &ldquo;onde eu parei&rdquo; de graça. Sem o marcador, o painel diz <em>não declarada</em>, em vez de adivinhar.</p>
+
+      <p class="small">Ideia portada do painel do <code>beer-and-code-harness</code>; código nativo em Node, porque os hooks rodam onde o Claude Code roda, e o núcleo acabou de consertar um bug que só existia no Linux. O que mais foi portado, e o que ficou de fora, está no <a href="ESTUDO-ralph.md">estudo de decisão</a>.</p>
     </section>
 
     <!-- ================================================ 9. ROLLOUT -->

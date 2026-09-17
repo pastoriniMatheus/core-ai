@@ -112,8 +112,8 @@ compare contagens. "390 exemplos, 4 falhas — as mesmas quatro na base" é prov
 
 ## Fase 5 — Publicar, com o portão
 
-**Pare e peça permissão.** Antes da PR e antes de mover o card. Toda vez, por
-card. Detalhe na skill `entregar-trabalho`.
+**Pare e peça permissão.** Antes da PR e antes de mover o card. Por PR e por
+card, toda vez. Detalhe na skill `entregar-trabalho`.
 
 O hook `pre-publish-guard` intercepta os dois — mas chegue na permissão por
 decisão, não por bloqueio: um agente que só pergunta porque travou já gastou o

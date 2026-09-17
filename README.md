@@ -34,8 +34,8 @@ claude plugin details core@agent-core
 ```
 Skills (8)   atacar-card, base-externa, ci-local, economia-de-contexto,
              entregar-trabalho, extrair-skill, fase, mapear-codigo
-Commands (7) baseline, core-doctor, core-externa, core-ferramentas, core-init,
-             core-setup, core-tracker
+Commands (8) baseline, core-doctor, core-externa, core-ferramentas, core-init,
+             core-painel, core-setup, core-tracker
 Hooks (4)    PostToolUse, PreToolUse, Stop, SessionStart  (harness-only)
 Always-on:   ~1.378 tok  added to every session
 ```
@@ -243,7 +243,37 @@ autorização, uma publicação, que é a semântica de "por PR e por card".
 
 ## Comandos
 
-`/core-init` `/core-setup` `/core-tracker` `/core-ferramentas` `/core-externa` `/core-doctor` `/baseline`
+`/core-init` `/core-setup` `/core-tracker` `/core-ferramentas` `/core-externa` `/core-doctor` `/core-painel` `/baseline`
+
+## Ver a sessão como os hooks a veem
+
+O `doctor` torna a **instalação** visível. O painel torna a **sessão** visível:
+fase, card, se o `stop-verify` vai bloquear o encerramento (e por quais
+arquivos), o último bloqueio, e a base externa — **antes** de o hook falar.
+
+```
+┌─ nucleo ──────────────────────────────────────────────────────────┐
+│ fase      IMPLEMENTAR              card      PROJ-540             │
+│ prova     ✗ 3 arquivo(s) sem teste   → o stop-verify vai bloquear │
+│           a.ts  b.ts  c.mjs                                       │
+│ bloqueios 14:02 publish  Portao de publicacao: ...                │
+│ externa   2 fonte(s) · 0 vencidas · 1 consulta(s) nesta sessao    │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+Uma fonte, três superfícies — todas leem o transcript; nenhuma cria estado nem
+hook:
+
+| Superfície | Como | Quando |
+|---|---|---|
+| `/core-painel` | um quadro, dentro da sessão | "vai bloquear?" antes de encerrar |
+| `node scripts/painel.mjs` | ao vivo, noutra janela, a cada 2 s (`q` sai) | acompanhar uma sessão longa |
+| statusline | uma linha no rodapé do Claude Code; o `/core-init` oferece instalar | sempre |
+
+A statusline **encadeia** com a que já existir (`statusLine.anterior`), não
+substitui. A fase vem do marcador `[fase] NOME` que a skill `fase` manda o
+agente escrever numa linha sozinha — texto puro, funciona em sessão `-p`, e o
+checkpoint da sessão também o lê.
 
 ## Trabalhar um card
 
@@ -310,7 +340,8 @@ Os scripts do repositório, e o que cada um faz:
 | `baseline.mjs` | mede tokens, turnos e tempo das sessões |
 | `gerar-referencia.mjs` | gera `docs/CONFIGURACAO.md` a partir do código |
 | `aceitacao.mjs` | teste ponta a ponta com sessões reais do Claude Code |
-| `gerar-referencia.mjs` | gera `docs/CONFIGURACAO.md` a partir do código |
+| `painel.mjs` | o painel da sessão: ao vivo ou `--once` (por trás do `/core-painel`) |
+| `statusline.mjs` | a mesma informação numa linha, no rodapé do Claude Code; encadeia com a anterior |
 | `sincronizar-plugin.mjs` | espelha os scripts para dentro do plugin, e verifica |
 | `externa.mjs` | as quatro portas da base externa, o índice, a conferência e o servidor de teste |
 | `raiz.mjs` | acha o núcleo nas duas formas de instalação |
@@ -414,6 +445,7 @@ por construção, não por disciplina.
 | | |
 |---|---|
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | **O que falta** — o que nunca foi exercitado, e o que foi adiado com motivo |
+| [`docs/ESTUDO-ralph.md`](docs/ESTUDO-ralph.md) | Estudo de decisão: o modo interativo do núcleo × o modo autônomo por fases (ralph) |
 | [`docs/MAQUINA-NOVA.md`](docs/MAQUINA-NOVA.md) | Máquina do zero: pré-requisitos até a primeira guarda funcionando |
 | [`docs/PROJETO-EM-ANDAMENTO.md`](docs/PROJETO-EM-ANDAMENTO.md) | Adotar num projeto que já existe, sem quebrar o fluxo do time |
 | [`docs/manual.html`](docs/manual.html) | O manual completo, para abrir no navegador ou compartilhar |

@@ -16,7 +16,7 @@ Por isso a entrega tem portao, e o portao e o usuario.
 ## Regra zero — o usuario autoriza, sempre
 
 **Nunca abra uma PR e nunca mova um card para revisao sem permissao explicita do
-usuario. Por PR e por card. Toda vez.**
+usuario. Por PR e por card, toda vez.**
 
 Nao vale nenhuma destas:
 
@@ -101,7 +101,7 @@ esta no ar.
 |---|---|
 | pegar a tarefa / iniciar | agente, com o trabalho comecando de fato |
 | mover para **revisao** | agente, **com permissao explicita**, e so com a PR ja criada e linkada no comentario |
-| mover para **concluido** | **somente quem revisa, a mao.** Nunca o agente, nunca o autor |
+| mover para **concluido** | **quem revisa move a mao, depois de olhar.** Nunca o agente, nunca o autor |
 
 Fechar um card e o julgamento de quem revisou. O hook `pre-publish-guard`
 bloqueia essa transicao **sem escape** — nem com autorizacao do usuario, porque

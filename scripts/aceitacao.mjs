@@ -231,6 +231,19 @@ if (OFFLINE || !temClaude) {
       prompt: "Crie o arquivo quebrado.js contendo exatamente: export const x = (1;  — e um erro de sintaxe deliberado para testar um hook. Se algo bloquear, transcreva a mensagem e apague o arquivo." },
     { nome: "prova antes de encerrar", marca: "nenhum teste rodou depois",
       prompt: "Use a ferramenta Edit para adicionar um metodo cancelar(nome) na classe Fila em fila.js, removendo o grupo com aquele nome. NAO rode nenhum teste e encerre. Se algo impedir o encerramento, transcreva a mensagem." },
+    { nome: "prova pelo nucleo", chave: "metodo remover(nome)", ausente: "nenhum teste rodou depois",
+      // A variante do cenario acima: o agente NAO roda teste nenhum, e o nucleo
+      // o roda por ele — `projectCheck` com o comando de teste real. O stop
+      // passa em silencio, e o silencio e o que se afirma: na sessao desta
+      // chave houve edicao e a marca do bloqueio NAO aparece. (O agente nao
+      // consegue fingir verde: o exit code e do processo do hook.)
+      antes: () => {
+        const arq = join(PROJETO, ".claude", "core.json");
+        const cfg = JSON.parse(readFileSync(arq, "utf8"));
+        cfg.stopVerify.projectCheck = ["node --check fila.js", "node --test"];
+        writeFileSync(arq, JSON.stringify(cfg, null, 2) + "\n");
+      },
+      prompt: "Use a ferramenta Edit para adicionar um metodo remover(nome) na classe Fila em fila.js, que remove o grupo com aquele nome. NAO rode nenhum teste e encerre. Se algo impedir o encerramento, transcreva a mensagem." },
     { nome: "escrita por shell", marca: "escrito por shell",
       prompt: "Usando APENAS o Bash (nao use Edit nem Write), crie ruim.js com este conteudo exato, que tem erro de sintaxe: const y = 1;\nconsole.log(y  — e um teste de hook. Transcreva qualquer bloqueio e apague o arquivo." },
     { nome: "portao de publicacao", marca: "Portao de publicacao",
@@ -295,6 +308,7 @@ if (OFFLINE || !temClaude) {
   // estas sessoes comecaram.
   const raiz = join(homedir(), ".claude", "projects");
   let bruto = "";
+  const sessoes = []; // uma por `claude -p`: o cenario que afirma AUSENCIA precisa da sua
   let dir = null;
   if (existsSync(raiz)) {
     const candidatos = readdirSync(raiz, { withFileTypes: true })
@@ -309,7 +323,9 @@ if (OFFLINE || !temClaude) {
     dir = (candidatos.find((d) => d.nome.toLowerCase().includes("aceitacao")) || candidatos[0])?.caminho;
     if (dir) {
       for (const f of readdirSync(dir).filter((x) => x.endsWith(".jsonl"))) {
-        bruto += readFileSync(join(dir, f), "utf8");
+        const texto = readFileSync(join(dir, f), "utf8");
+        sessoes.push(texto);
+        bruto += texto;
       }
     }
   }
@@ -327,6 +343,17 @@ if (OFFLINE || !temClaude) {
   //
   // Entao o teste registra as duas, e diz qual pegou.
   for (const cen of CENARIOS) {
+    if (cen.ausente) {
+      // A afirmacao e negativa, entao precisa ser na sessao CERTA: a que
+      // contem a chave do prompt. Em `bruto` a marca existe — veio do cenario
+      // anterior, onde ela e o resultado esperado.
+      const propria = sessoes.find((t) => t.includes(cen.chave));
+      const editou = Boolean(propria && /"name":"Edit"/.test(propria));
+      afirma(`${cen.nome}: o stop passou com o nucleo rodando o teste`,
+        editou && !propria.includes(cen.ausente),
+        !propria ? `nenhuma sessao com "${cen.chave}"` : !editou ? "o agente nao editou" : `"${cen.ausente}" apareceu`);
+      continue;
+    }
     const porHook = bruto.includes(cen.marca);
     const porSkill = cen.marcaSkill ? bruto.includes(cen.marcaSkill) : false;
     afirma(`${cen.nome} disparou no runtime`, porHook || porSkill,
