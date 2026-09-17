@@ -149,6 +149,59 @@ O limiar exato nao foi fechado (esta entre 97 KB e 593 KB) porque a resposta nao
 muda nenhuma decisao: acima de 195 KB nao funciona, e e so acima de 195 KB que
 esta feature envia.
 
+### Servidor de equipe: desenhado, não construído
+
+O servidor de **teste** existe e foi provado (Docker, `healthy`, 401 sem bearer,
+400 com, publicado só em `127.0.0.1`). O servidor de **equipe** — o que rodaria
+num VPS para o time — está no `/core-externa` como desenho, e nada dele foi
+codificado. Foi decisão: *"só depois que o modo local mostrar demanda"*.
+
+O que falta, em ordem de esforço:
+
+| peça | por quê |
+|---|---|
+| exposição na rede | o compose **recusa** bind fora de loopback de propósito; para a equipe chegar, precisa de proxy na frente (`tailscale serve` ou `cloudflared` + Access) |
+| bearer **por dev** | hoje é um token só — sem revogação individual nem atribuição |
+| log por chamada | `ts, dev, tool, status, ms` — é de onde saem as métricas que dizem se o modo equipe compensa |
+| semáforo de 3 | o Google aguenta ~3 chats simultâneos; sem fila, o excedente vira 429 e o agente reprocessa contexto tentando de novo |
+
+O que já existe: bootstrap sem navegador (`NOTEBOOKLM_AUTH_JSON` — loga numa
+estação, monta o `storage_state.json` no container).
+
+O que precisa ser verdade antes de começar: uma conta Google **descartável e
+dedicada** — a que autenticou em 16/09 é pessoal e não serve para o time.
+
+E o custo que muda a conta: no servidor os devs falam por MCP HTTP, os 12.629
+tokens por sessão que a CLI local evita. Em equipe esse preço compra contenção
+de credencial. É trade-off, não vitória.
+
+**Estimativa, se for feito:** ~3 horas para compose de produção + LEIA
+operacional. O primeiro incidente previsto: alguém abrindo o NotebookLM logado
+na conta compartilhada e derrubando todos os clientes.
+
+### O histórico do git ainda tem nomes antigos
+
+Em 16/09 o histórico foi reescrito duas vezes — uma para tirar o nome de um
+cliente do conteúdo, outra para tirar nomes das mensagens de commit. As duas
+funcionaram: 0 ocorrências do que foi pedido.
+
+Mas a varredura larga mostrou o que sobrou nas **versões antigas** dos arquivos
+(as atuais estão limpas desde a 0.7.4):
+
+| ocorrências | o quê |
+|---|---|
+| ~130 | `PROJ-540` na forma antiga, em README, testes e scripts históricos |
+| 36 | o usuário Windows da máquina de desenvolvimento, em três arquivos históricos |
+| 24 | dois nomes de cliente em versões antigas do ROADMAP e de um exemplo |
+| 4 | um e-mail pessoal em versões antigas do ROADMAP |
+
+Tirar isso é uma **terceira** reescrita (tree-filter), outro force-push, e outro
+`reset --hard` para quem tem clone. A decisão ficou com o dono do repositório:
+os arquivos atuais estão limpos e o repo é privado.
+
+O que **não** se toca: a autoria dos commits (`author`/`committer`), que é o
+crédito de quem fez o trabalho.
+
 ### Deferimento de ferramentas MCP — a verificação que pode inverter uma decisão
 
 A escolha de usar a CLI em vez do servidor MCP foi feita sobre um número medido:
