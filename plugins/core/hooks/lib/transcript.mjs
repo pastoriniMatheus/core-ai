@@ -7,7 +7,7 @@
 import { readFileSync, statSync, openSync, readSync, closeSync, existsSync, readdirSync } from "node:fs";
 import { extname, join, isAbsolute } from "node:path";
 import { homedir } from "node:os";
-import { arquivosEscritosPorShell } from "./escrita-shell.mjs";
+import { arquivosEscritosPorShell, ehShell } from "./escrita-shell.mjs";
 
 const MAX_TAIL_BYTES = 4 * 1024 * 1024; // transcripts longos: le so o final
 
@@ -89,7 +89,7 @@ export function estadoDaProva(path, cfg, cwd) {
       arquivos.add(e.input.file_path);
     }
 
-    if (e.nome === "Bash") {
+    if (ehShell(e.nome)) {
       const cmd = e.input.command || "";
 
       // Escrita por shell conta como edicao. Sem isto, um agente que resolve a

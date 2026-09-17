@@ -17,6 +17,7 @@
 import { existsSync } from "node:fs";
 import { basename } from "node:path";
 import { readTail, estadoDaProva } from "./transcript.mjs";
+import { ehShell } from "./escrita-shell.mjs";
 import { cardsCitados } from "./checkpoint.mjs";
 import { lerIndice } from "./externa.mjs";
 
@@ -66,7 +67,7 @@ export function retrato({ transcriptPath, cwd, cfg }) {
         const m = b.text.match(/^\s*\[fase\]\s+(EXPLORAR|ALINHAR|IMPLEMENTAR|PROVAR)\b/mi);
         if (m) fase = m[1].toUpperCase();
       }
-      if (msg.role === "assistant" && b?.type === "tool_use" && b.name === "Bash") {
+      if (msg.role === "assistant" && b?.type === "tool_use" && ehShell(b.name)) {
         if (/(^|[\s;&|])notebooklm\s+ask\b/i.test(b.input?.command || "")) consultas++;
       }
       if (msg.role === "user" && b?.type === "text" && b.text) conversa.push(b.text);

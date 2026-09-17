@@ -11,6 +11,7 @@
 import { readFileSync, statSync, openSync, readSync, closeSync, existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { extname, basename } from "node:path";
+import { ehShell } from "./escrita-shell.mjs";
 
 const MAX_TAIL_BYTES = 4 * 1024 * 1024;
 
@@ -116,7 +117,7 @@ export function montar({ transcriptPath, cwd, cfg = {} }) {
         if (["Edit", "Write", "MultiEdit", "NotebookEdit"].includes(b.name) && ehCodigo(f)) {
           editados.add(f);
         }
-        if (b.name === "Bash" && ehTeste(b.input?.command)) testes.push(b.input.command);
+        if (ehShell(b.name) && ehTeste(b.input?.command)) testes.push(b.input.command);
       }
     }
   }

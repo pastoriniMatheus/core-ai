@@ -198,12 +198,14 @@ ataca a grande. As duas somam, mas só uma muda a conta.
 
 | Hook | Evento | O que garante |
 |---|---|---|
-| `post-edit-verify` | `Edit` `Write` `MultiEdit` `Bash` | O arquivo escrito passa pelo linter — por ferramenta **ou por shell** |
-| `pre-bash-guard` | `Bash` | Dependência nova exige subir a escada. Grafo desatualizado avisa antes de mentir |
-| `pre-publish-guard` | `Bash` e `mcp__*` | PR ou card sem permissão explícita não passa, **pelos dois caminhos**. Estado final do card é bloqueio **sem escape** |
+| `post-edit-verify` | `Edit` `Write` `MultiEdit` `Bash` `PowerShell` | O arquivo escrito passa pelo linter — por ferramenta **ou por shell** |
+| `pre-bash-guard` | `Bash` `PowerShell` | Dependência nova exige subir a escada. Grafo desatualizado avisa antes de mentir |
+| `pre-publish-guard` | `Bash` `PowerShell` e `mcp__*` | PR ou card sem permissão explícita não passa, **pelos dois caminhos**. Estado final do card é bloqueio **sem escape** |
 | `stop-verify` | `Stop` | Código alterado sem teste rodado depois não encerra a sessão |
 | `stop-checkpoint` | `Stop` | Grava onde a sessão parou: card, branch, arquivos, se houve prova, e o que estava sendo feito |
 | `session-start` | `SessionStart` | Entrega o checkpoint da sessão anterior, e avisa o que falta configurar |
+
+`PowerShell` é a segunda ferramenta de shell do Claude Code no Windows, com o mesmo campo `command`. Toda guarda que decide por comando decide igual pelos dois — e há um teste para cada caso, por shell.
 
 Autodetecção: Ruby, JS/TS, Python, Go, PHP, Shell, Swift, Kotlin, JSON e YAML.
 Ferramenta ausente = hook silencioso, nunca hook quebrado — a existência do

@@ -1,9 +1,9 @@
 # O que falta
 
-Estado em 17/09/2026, versão **0.8.1**. Nada aqui é bug conhecido: são coisas
+Estado em 17/09/2026, versão **0.8.2**. Nada aqui é bug conhecido: são coisas
 **nunca exercitadas** e decisões adiadas com motivo.
 
-O núcleo passa 231 testes de guarda, 36 de documentação e 25/25 na aceitação
+O núcleo passa 239 testes de guarda, 36 de documentação e 26/26 na aceitação
 com sessões reais do Claude Code. Isso prova o que foi testado — não o que não
 foi, e esta página existe para que a diferença entre as duas coisas fique visível.
 
@@ -30,7 +30,7 @@ Os testes de MCP montam o evento à mão. **Nenhum servidor MCP foi acionado**
 — nem para ler card, nem para barrar escrita.
 
 O que isso não prova: que os nomes reais das ferramentas de cada servidor
-casam com os padrões. `mcp__plane_uaizy__list_work_items` veio de um relato seu,
+casam com os padrões. `mcp__plane_acme__list_work_items` veio de um relato seu,
 não de um catálogo. Servidores de Linear, Jira e GitHub podem nomear diferente.
 
 **Como fechar:** num projeto com MCP de tracker configurado, pedir uma leitura
@@ -306,11 +306,31 @@ aberto**:
 | 2 | `Edit`/`Write` | escrita por shell |
 | 3 | `curl` no tracker | o próprio `tracker.mjs` |
 | 4 | `install.mjs` | instalação por plugin |
+| 8 | ferramenta `Bash` | ferramenta `PowerShell` (Windows), mesmo campo `command` |
 
 E a revisão achou a quinta: a isenção de leitura no MCP casando prefixo, o que
 deixava `get_or_update_work_item` atravessar o portão inteiro.
 
+A oitava (17/09/2026) veio da aceitação, e só depois de o teste parar de ler
+transcripts velhos: o agente rodou `notebooklm ask "<CPF válido>"` pela
+ferramenta **PowerShell** e nenhum hook viu — todos os matchers e todos os
+`=== "Bash"` só conheciam um shell. Fechado num lugar só (`ehShell` em
+`lib/escrita-shell.mjs`, matchers `Bash|PowerShell`), com o gêmeo por
+PowerShell de cada caso que já existia por Bash. O Mac/Linux não tem essa
+ferramenta; o Windows — onde este projeto foi todo desenvolvido — tem, e
+ninguém olhou.
+
 **A pergunta que precisa ser feita sempre, e não foi:** *e pelo outro caminho?*
+
+E a terceira lição, de 17/09/2026, é sobre o **teste** e não sobre o hook: a
+aceitação lia **todos** os transcripts do diretório do projeto de teste, de
+todas as rodadas. O cenário do CPF usava `123.456.789-00` — dígito inválido,
+que o portão deixa passar **de propósito** — e ficou verde por duas rodadas
+porque a marca do bloqueio existia num transcript de dias antes. Um teste que
+acumula evidência de rodadas passadas não testa a rodada presente. Agora só
+entram sessões com `mtime` posterior ao início, o CPF do cenário tem dígito
+válido, e o cenário que afirma *ausência* de bloqueio acha a sua sessão pelo
+prompt inteiro — não por uma chave que o checkpoint injeta nas seguintes.
 
 A segunda lição foi mais desconfortável: **três dos sete achados críticos foram
 introduzidos nas horas anteriores**, corrigindo outra coisa. Correção com pressa

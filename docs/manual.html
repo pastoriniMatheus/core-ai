@@ -448,8 +448,8 @@
     <p class="standfirst">Um núcleo genérico que organiza as diretrizes do agente por <strong>mecanismo de execução</strong> — não por ferramenta. Tudo que pode virar hook vira hook; só o que sobra vira instrução.</p>
     <div class="status-row">
       <span class="chip good">Camada 0 implementada</span>
-      <span class="chip good">231/231 unidade</span>
-      <span class="chip good">19/19 aceita&ccedil;&atilde;o</span>
+      <span class="chip good">239/239 unidade</span>
+      <span class="chip good">26/26 aceita&ccedil;&atilde;o</span>
       <span class="chip">8 skills</span>
       <span class="chip">8 comandos</span>
       <span class="chip">Node 18+, zero dependências</span>
@@ -677,7 +677,8 @@ prefixado com CORE_DEP_OK=1.</code></pre>
             <tr><td>projectCheck como prova</td><td>teste verde rodado pelo núcleo vale; vermelho bloqueia; check que não é teste não vale</td><td class="num-cell">3</td></tr>
             <tr><td>Painel</td><td>última fase, card, edição sem prova, bloqueio ancorado no início, hook nomeado, consultas, linha da statusline, sem transcript</td><td class="num-cell">8</td></tr>
             <tr><td>Escrita e teste no mesmo comando</td><td>a ordem no texto decide: escreveu-e-testou passa, testou-e-escreveu bloqueia</td><td class="num-cell">2</td></tr>
-            <tr><td colspan="2" style="color:var(--accent-ink);font-weight:600">Total</td><td class="num-cell" style="color:var(--accent-ink);font-weight:600">231 / 231</td></tr>
+            <tr><td>PowerShell</td><td>o outro shell do Windows: dependência, PR, CPF, Set-Content quebrado, escrita e prova no Stop, matcher</td><td class="num-cell">8</td></tr>
+            <tr><td colspan="2" style="color:var(--accent-ink);font-weight:600">Total</td><td class="num-cell" style="color:var(--accent-ink);font-weight:600">239 / 239</td></tr>
           </tbody>
         </table>
       </div>
@@ -1189,7 +1190,7 @@ claude plugin update core@agent-core</code></pre>
       <p>Os hooks foram carregados numa sessão real do Claude Code, dentro de um projeto Go criado para isso — um gerenciador de fila de espera de restaurante, com <code>go.mod</code>, testes e histórico git. Três cenários, três sessões independentes.</p>
 
       <div class="callout">
-        <p><strong>19/19 na aceitação automatizada.</strong> As cinco guardas disparam em sessão real do Claude Code, contadas no transcript — não deduzidas da resposta do agente. Um comando reproduz tudo: <code>node scripts/aceitacao.mjs</code>.</p>
+        <p><strong>26/26 na aceitação automatizada.</strong> As guardas disparam em sessão real do Claude Code, contadas no transcript — não deduzidas da resposta do agente. Um comando reproduz tudo: <code>node scripts/aceitacao.mjs</code>.</p>
       </div>
 
       <div class="scroller">

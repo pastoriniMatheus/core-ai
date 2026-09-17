@@ -164,9 +164,9 @@ console.log("\n=== regressao: LER nao e publicar (MCP) ===");
   });
 
   for (const n of [
-    "mcp__plane_uaizy__list_work_items",
-    "mcp__plane_uaizy__count_work_items",
-    "mcp__plane_uaizy__retrieve_work_item_by_identifier",
+    "mcp__plane_acme__list_work_items",
+    "mcp__plane_acme__count_work_items",
+    "mcp__plane_acme__retrieve_work_item_by_identifier",
     "mcp__plane__get_issue",
     "mcp__plane__search_work_items",
     "mcp__linear__list_issues",
@@ -177,9 +177,9 @@ console.log("\n=== regressao: LER nao e publicar (MCP) ===");
   }
 
   for (const n of [
-    "mcp__plane_uaizy__update_work_item",
-    "mcp__plane_uaizy__create_work_item",
-    "mcp__plane_uaizy__delete_work_item",
+    "mcp__plane_acme__update_work_item",
+    "mcp__plane_acme__create_work_item",
+    "mcp__plane_acme__delete_work_item",
     "mcp__plane__transition_issue",
   ]) {
     check(n.split("__").pop() + " -> nega", "pre-publish-guard.mjs", mcpT(n), "deny");
@@ -943,6 +943,51 @@ else { failed++; console.log("  FAIL  projeto configurado -> nao deveria avisar"
     failed++;
     console.log(`  FAIL  o portao ainda delega a variavel (semVariavel=${semVariavel} comAbsoluto=${comAbsoluto})`);
   }
+}
+
+console.log("\n=== PowerShell: o outro shell, a mesma decisao ===");
+// Achado pela aceitacao em 17/09/2026: o agente rodou `notebooklm ask "<CPF>"`
+// pela ferramenta PowerShell e nenhum hook viu — tudo chaveava em "Bash". O
+// Claude Code no Windows tem as duas, com o mesmo campo `command`. Cada guarda
+// que decide por comando tem de decidir igual pelos dois shells; este bloco
+// e o gemeo por PowerShell dos casos que ja existiam por Bash.
+{
+  const ps = (cmd, extra = {}) => ({ cwd: TMP, tool_name: "PowerShell", tool_input: { command: cmd }, ...extra });
+  const pr = ["gh", "pr", "create", "--fill"].join(" ");
+  const dep = ["npm", "install", "lodash"].join(" ");
+  check("PowerShell: dependencia nova e negada", "pre-bash-guard.mjs", ps(dep), "deny");
+  check("PowerShell: PR sem autorizacao e negada", "pre-publish-guard.mjs", ps(pr, { transcript_path: editouETestou }), "deny");
+  check("PowerShell: CPF na pergunta a base externa e negado", "pre-externa-guard.mjs",
+    ps('notebooklm ask "o CPF 529.982.247-25 aparece?"'), "deny");
+  check("PowerShell: consulta limpa passa", "pre-externa-guard.mjs", ps('notebooklm ask "qual a norma"'), "pass");
+
+  // Escrita por PowerShell (Set-Content) passa pelo verificador por arquivo...
+  const dirPs = join(TMP, "ps");
+  mkdirSync(dirPs, { recursive: true });
+  const ruim = join(dirPs, "ruim.js");
+  writeFileSync(ruim, "const x = (1;\n");
+  check("PowerShell: Set-Content num JS quebrado bloqueia", "post-edit-verify.mjs",
+    ps(`Set-Content -Path ${ruim} -Value 'x'`, { cwd: dirPs }), "block");
+
+  // ...e conta como edicao no Stop, e o teste por PowerShell conta como prova.
+  const bom = join(dirPs, "bom.js");
+  writeFileSync(bom, "const y = 1;\n");
+  const escreveuPorPs = transcript("ps1.jsonl", [
+    { name: "PowerShell", input: { command: `Set-Content -Path ${bom} -Value 'const y = 2;'` } },
+  ]);
+  const escreveuETestouPorPs = transcript("ps2.jsonl", [
+    { name: "PowerShell", input: { command: `Set-Content -Path ${bom} -Value 'const y = 2;'` } },
+    { name: "PowerShell", input: { command: "npx vitest run" } },
+  ]);
+  check("PowerShell: escreveu e nao testou -> bloqueia", "stop-verify.mjs", { cwd: dirPs, transcript_path: escreveuPorPs }, "block");
+  check("PowerShell: escreveu e testou -> passa", "stop-verify.mjs", { cwd: dirPs, transcript_path: escreveuETestouPorPs }, "pass");
+
+  // E o matcher do hooks.json tem de nomear os dois — senao nada acima roda.
+  const hooksJson = readFileSync(join(HOOKS, "hooks.json"), "utf8");
+  const semPs = [...hooksJson.matchAll(/"matcher": "([^"]*)"/g)].map((m) => m[1])
+    .filter((m) => m.includes("Bash") && !m.includes("PowerShell"));
+  if (!semPs.length) { passed++; console.log("  PASS  todo matcher com Bash tem PowerShell"); }
+  else { failed++; console.log(`  FAIL  matchers so com Bash: ${semPs.join(" | ")}`); }
 }
 
 console.log("\n=== regressao: instalador nao pode divergir do plugin ===");

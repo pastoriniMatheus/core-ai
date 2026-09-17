@@ -22,7 +22,7 @@
 
 import { existsSync, statSync, openSync, readSync, closeSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { arquivosEscritosPorShell } from "./lib/escrita-shell.mjs";
+import { arquivosEscritosPorShell, ehShell } from "./lib/escrita-shell.mjs";
 import { fileURLToPath } from "node:url";
 import { run, pass, denyTool } from "./lib/io.mjs";
 import { loadConfig } from "./lib/config.mjs";
@@ -108,7 +108,7 @@ function escreveNoToken(input) {
   if (/^(Edit|Write|MultiEdit|NotebookEdit)$/.test(tool)) {
     return alvo.test(input.tool_input?.file_path || "");
   }
-  if (tool === "Bash") {
+  if (ehShell(tool)) {
     const cmd = input.tool_input?.command || "";
     if (arquivosEscritosPorShell(cmd).some((f) => alvo.test(f))) return true;
     // Redirect, `touch`, `cp`, `mv` e afins que a extracao nao cobre: aqui
@@ -135,7 +135,7 @@ run(async (input) => {
   }
 
   // Fora isso, ferramenta de edicao nao e assunto deste hook.
-  if (!/^(Bash)$/.test(input.tool_name || "") && !(input.tool_name || "").startsWith("mcp__")) pass();
+  if (!ehShell(input.tool_name) && !(input.tool_name || "").startsWith("mcp__")) pass();
 
   // ------------------------------------------- 0b. o comando do usuario
   // `externa.mjs enviar` e quem emite a autorizacao de envio. Se o agente o

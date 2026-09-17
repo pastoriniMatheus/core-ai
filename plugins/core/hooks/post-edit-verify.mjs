@@ -18,7 +18,7 @@ import { existsSync } from "node:fs";
 import { run, pass, block } from "./lib/io.mjs";
 import { loadConfig } from "./lib/config.mjs";
 import { candidatesFor, yamlCandidates, runFirstAvailable, verifyJsonInline } from "./lib/detect.mjs";
-import { arquivosEscritosPorShell } from "./lib/escrita-shell.mjs";
+import { arquivosEscritosPorShell, ehShell } from "./lib/escrita-shell.mjs";
 
 /** Verifica um arquivo. Devolve a mensagem de reprovacao, ou null se passou. */
 function verificar(file, cwd, cfg) {
@@ -47,7 +47,7 @@ run(async (input) => {
   if (!cfg.verify.enabled) pass();
 
   // ------------------------------------------------- escrita por shell
-  if (input.tool_name === "Bash") {
+  if (ehShell(input.tool_name)) {
     for (const alvo of arquivosEscritosPorShell(input.tool_input?.command)) {
       const caminho = isAbsolute(alvo) ? alvo : join(input.cwd || ".", alvo);
       // A extracao e heuristica: o alvo pode nao ser um arquivo de verdade.
