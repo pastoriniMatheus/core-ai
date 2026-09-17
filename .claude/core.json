@@ -1,10 +1,10 @@
 {
   "//": "Configuracao do nucleo NESTE repositorio (o proprio agent-core). Tracker fica para quando o usuario decidir.",
   "stopVerify": {
-    "//testPatterns": "Os testes rodam com node direto; sem isto o stop-verify nao os reconhece e bloqueia depois de terem rodado.",
+    "//testPatterns": "Os testes rodam com node direto; sem isto o stop-verify nao os reconhece e bloqueia depois de terem rodado. E substring, nao regex.",
     "testPatterns": [
       "node tests/",
-      "aceitacao[.]mjs"
+      "aceitacao.mjs"
     ],
     "//projectCheck": "O nucleo roda a suite de hooks antes de encerrar; se ela passa, e prova - o agente nao precisa ter rodado nada. A aceitacao fica de fora (4 min, sessoes reais).",
     "projectCheck": [

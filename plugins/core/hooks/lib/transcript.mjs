@@ -90,16 +90,29 @@ export function estadoDaProva(path, cfg, cwd) {
     }
 
     if (e.nome === "Bash") {
-      if (ehTeste(e.input.command)) ultimoTeste = i;
+      const cmd = e.input.command || "";
 
       // Escrita por shell conta como edicao. Sem isto, um agente que resolve a
       // tarefa por `cat >` ou `Set-Content` encerra a sessao sem nunca ter
       // provado nada — foi exatamente o que aconteceu numa sessao real.
-      for (const alvo of arquivosEscritosPorShell(e.input.command)) {
+      let posEscrita = -1;
+      for (const alvo of arquivosEscritosPorShell(cmd)) {
         if (!ehCodigo(alvo)) continue;
         const caminho = isAbsolute(alvo) ? alvo : join(cwd || ".", alvo);
         ultimaEdicao = i;
         arquivos.add(caminho);
+        posEscrita = Math.max(posEscrita, cmd.indexOf(alvo));
+      }
+
+      // Escrita e teste no MESMO comando ("sed -i ... && npm test") empatavam
+      // em i, e empate lia como "sem prova" — o painel acusou isso na primeira
+      // sessao em que rodou. O teste conta como depois da escrita se vem
+      // depois dela no texto; "npm test && sed -i ..." continua sem prova.
+      if (ehTeste(cmd)) {
+        const baixo = cmd.toLowerCase();
+        const posTeste = Math.min(...cfg.testPatterns
+          .map((p) => baixo.indexOf(p.toLowerCase())).filter((x) => x >= 0));
+        ultimoTeste = posEscrita < 0 ? i : posTeste > posEscrita ? i + 0.5 : i - 0.5;
       }
     }
   });

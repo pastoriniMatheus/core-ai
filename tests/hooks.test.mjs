@@ -255,6 +255,19 @@ console.log("\n=== regressao: escrita por SHELL nao pode escapar ===");
   ]);
   check("escreveu por shell e nao testou -> bloqueia", "stop-verify.mjs", { cwd: dir, transcript_path: soShell }, "block");
   check("escreveu por shell e testou -> passa", "stop-verify.mjs", { cwd: dir, transcript_path: shellETestou }, "pass");
+
+  // Escrita e teste no MESMO comando: a ordem no texto decide.
+  const escreveuETestouJunto = transcript("t8b.jsonl", [
+    { name: "Bash", input: { command: `cat > ${join(dir, "bom.js")} <<EOF
+x
+EOF
+npx vitest run` } },
+  ]);
+  const testouEEscreveuJunto = transcript("t8c.jsonl", [
+    { name: "Bash", input: { command: `npx vitest run && cat > ${join(dir, "bom.js")} <<EOF` } },
+  ]);
+  check("escreveu e testou no mesmo comando, nesta ordem -> passa", "stop-verify.mjs", { cwd: dir, transcript_path: escreveuETestouJunto }, "pass");
+  check("testou e escreveu no mesmo comando -> bloqueia", "stop-verify.mjs", { cwd: dir, transcript_path: testouEEscreveuJunto }, "block");
 }
 
 console.log("\n=== regressao: arquivo apagado nao exige prova ===");
