@@ -1,5 +1,5 @@
 {
-  "//": "Configuracao do nucleo NESTE repositorio (o proprio agent-core). Tracker fica para quando o usuario decidir.",
+  "//": "Configuracao do nucleo NESTE repositorio (o proprio agent-core). Tracker: GitHub Issues do repo, configurado pelo tracker-setup.",
   "stopVerify": {
     "//testPatterns": "Os testes rodam com node direto; sem isto o stop-verify nao os reconhece e bloqueia depois de terem rodado. E substring, nao regex.",
     "testPatterns": [
@@ -12,6 +12,18 @@
     ]
   },
   "publish": {
-    "baseBranch": "main"
+    "baseBranch": "main",
+    "tracker": "github",
+    "tokenEnv": "GITHUB_TOKEN",
+    "repo": "pastoriniMatheus/core-ai",
+    "doneState": "closed",
+    "forbiddenStates": [
+      "close"
+    ],
+    "trackerPatterns": [
+      "gh issue (edit|close|reopen|delete|transfer|lock|unlock|pin|unpin)",
+      "api[.]github[.]com/repos/pastoriniMatheus/core-ai/issues",
+      "mcp__[^ ]*github"
+    ]
   }
 }

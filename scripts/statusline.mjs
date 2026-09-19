@@ -36,7 +36,17 @@ try {
   const st = JSON.parse(readFileSync(join(homedir(), ".claude", "settings.json"), "utf8"));
   const cmd = st?.statusLine?.anterior;
   if (cmd) {
-    const r = spawnSync(cmd, { input: entrada, encoding: "utf8", shell: true, timeout: 1500, windowsHide: true });
+    // O Claude Code roda a statusline pelo Git Bash, tambem no Windows — a
+    // anterior (a do Orca, por exemplo) e um script POSIX. `shell: true` aqui
+    // seria cmd.exe, que responde "-z foi inesperado" e a linha some. Entao:
+    // o mesmo bash que o Claude Code usa, se existir; senao o shell da maquina.
+    // ponytail: dois caminhos fixos; ler a config do Claude Code se ela mudar.
+    const gitBash = process.platform === "win32"
+      ? [process.env.CLAUDE_CODE_GIT_BASH_PATH, "C:\\Program Files\\Git\\bin\\bash.exe"].find((p) => p && existsSync(p))
+      : null;
+    const r = gitBash
+      ? spawnSync(gitBash, ["-c", cmd], { input: entrada, encoding: "utf8", timeout: 1500, windowsHide: true })
+      : spawnSync(cmd, { input: entrada, encoding: "utf8", shell: true, timeout: 1500, windowsHide: true });
     anterior = (r.stdout || "").split("\n")[0].trim();
   }
 } catch { /* sem anterior */ }

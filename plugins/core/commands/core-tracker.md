@@ -43,7 +43,7 @@ O que você precisa no fim:
 | Plane | URL da instância e o **workspace slug** |
 | Linear | nada além do token |
 | Jira | URL e o **email** da conta |
-| GitHub Issues | nada além do token |
+| GitHub Issues | nada além do token — o repositório vem do `origin`, e `gh issue close` entra no bloqueio sem escape |
 
 **Onde o usuário acha o token:**
 

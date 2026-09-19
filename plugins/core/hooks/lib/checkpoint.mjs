@@ -37,7 +37,7 @@ function readTail(path) {
  * capturado, e não numa posição fixa.
  */
 export function cardsCitados(bruto, padrao) {
-  const re = new RegExp(padrao || "(^|[^A-Za-z0-9])([A-Z]{2,10}-[0-9]+)([^A-Za-z0-9]|$)", "g");
+  const re = new RegExp(padrao || "(^|[^A-Za-z0-9-])([A-Z]{2,10}-[0-9]+)([^A-Za-z0-9]|$)", "g");
   const ehCard = /^[A-Z]{2,10}-[0-9]+$/;
   const vistos = [];
   for (const m of bruto.matchAll(re)) {

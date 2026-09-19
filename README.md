@@ -309,7 +309,7 @@ Só necessário para **editar**, não para usar.
 ```bash
 git clone https://github.com/pastoriniMatheus/core-ai.git
 cd core-ai
-node tests/hooks.test.mjs              # 239 casos: as guardas
+node tests/hooks.test.mjs              # 248 casos: as guardas
 node tests/docs.test.mjs               # a documentacao ainda descreve o que existe?
 node scripts/aceitacao.mjs --offline   # instalação e guardas
 node scripts/aceitacao.mjs             # + sessões reais do Claude Code, ~10 min

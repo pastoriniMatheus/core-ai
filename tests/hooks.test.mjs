@@ -355,6 +355,35 @@ check(
   "deny"
 );
 
+console.log("\n=== GitHub Issues como tracker (o que o tracker-setup grava) ===");
+// GitHub nao tem URL de tracker: o que identifica e o repositorio, e o estado
+// final e `gh issue close`. Antes o tracker-setup gravava so `mcp__[^ ]*github`
+// — e `gh issue close 12` atravessava o unico bloqueio sem escape do nucleo.
+// Este bloco usa exatamente o que o script passou a gravar.
+{
+  const dirGh = join(TMP, "gh-issues", ".claude");
+  mkdirSync(dirGh, { recursive: true });
+  writeFileSync(join(dirGh, "core.json"), JSON.stringify({
+    publish: {
+      tracker: "github", repo: "acme/projeto", doneState: "closed", forbiddenStates: ["close"],
+      trackerPatterns: [
+        "gh issue (edit|close|reopen|delete|transfer|lock|unlock|pin|unpin)",
+        "api[.]github[.]com/repos/acme/projeto/issues", "mcp__[^ ]*github",
+      ],
+    },
+  }));
+  const gh = (cmd) => ({ cwd: join(TMP, "gh-issues"), transcript_path: editouETestou, tool_input: { command: cmd } });
+  check("gh issue close -> nega (estado final)", "pre-publish-guard.mjs", gh("gh issue close 12"), "deny");
+  check("gh issue close COM autorizacao -> nega mesmo assim", "pre-publish-guard.mjs", gh("CORE_PUBLISH_OK=1 gh issue close 12 -c pronto"), "deny");
+  check("PATCH state closed pela API -> nega mesmo assim", "pre-publish-guard.mjs",
+    gh(`CORE_PUBLISH_OK=1 curl -X PATCH https://api.github.com/repos/acme/projeto/issues/12 -d '{"state":"closed"}'`), "deny");
+  check("gh issue edit (label) -> nega (falta autorizacao)", "pre-publish-guard.mjs", gh("gh issue edit 12 --add-label em-revisao"), "deny");
+  check("gh issue edit autorizado -> passa", "pre-publish-guard.mjs", gh("CORE_PUBLISH_OK=1 gh issue edit 12 --add-label em-revisao"), "pass");
+  check("gh issue comment -> passa (comentar nao muda estado)", "pre-publish-guard.mjs", gh('gh issue comment 12 --body "PR: #40"'), "pass");
+  check("gh issue view -> passa", "pre-publish-guard.mjs", gh("gh issue view 12"), "pass");
+  check("gh issue list -> passa", "pre-publish-guard.mjs", gh("gh issue list --state open"), "pass");
+}
+
 console.log("\n=== YAML ===");
 const badYaml = f("bad.yml", "chave: valor\n  indentacao: errada\n\tcom-tab: 1\n");
 const goodYaml = f("good.yml", "chave: valor\nlista:\n  - a\n  - b\n");
@@ -625,6 +654,17 @@ console.log("\n=== checkpoint: onde a sessao parou ===");
   limpa();
   rodaCp({ cwd: dir, transcript_path: semCard });
   afirmaCp("nao inventa card a partir de caminho", leCp().length > 0 && !leCp().includes("Card:"));
+
+  // ...nem de um slug CITADO na conversa: o painel mostrou o slug do diretorio
+  // de transcripts ("C--Users-ACME-0042-desktop") como card, porque o agente
+  // o escreveu num texto. Hifen antes desqualifica; barra antes (branch) nao.
+  const slugNaConversa = jsonl("cp2b.jsonl", [
+    { message: { role: "user", content: [{ type: "text", text: "veja em C--Users-ACME-0042-desktop-x e na branch feat/CRM-778-ajuste" }] } },
+    { message: { role: "assistant", content: [{ type: "tool_use", name: "Edit", input: { file_path: arq } }] } },
+  ]);
+  limpa();
+  rodaCp({ cwd: dir, transcript_path: slugNaConversa });
+  afirmaCp("slug de diretorio na conversa nao vira card; branch vira", leCp().includes("Card: CRM-778"), leCp().split("\n")[1] || "");
 
   // Sessao que so leu nao gera checkpoint: ruido em ferramenta de retomada faz
   // ninguem ler o que importa.

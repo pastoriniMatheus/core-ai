@@ -94,7 +94,9 @@ export const DEFAULTS = {
     // perdem um nivel de escape com facilidade — "\b" chega como backspace, e o
     // padrao para de casar em silencio. "[0-9]" e "[^A-Za-z0-9]" dizem o mesmo
     // e atravessam shell, JSON e editor sem se desfazer.
-    cardPattern: "(^|[^A-Za-z0-9])([A-Z]{2,10}-[0-9]+)([^A-Za-z0-9]|$)",
+    // Hifen ANTES desqualifica: "C--Users-ACME-0042-desktop" e o slug de um
+    // diretorio, e apareceu como card no painel. "feat/ACME-0042-x" segue valendo.
+    cardPattern: "(^|[^A-Za-z0-9-])([A-Z]{2,10}-[0-9]+)([^A-Za-z0-9]|$)",
 
     // Comentar no card ao fim da sessao. DESLIGADO por padrao: um comentario
     // automatico por sessao vira ruido no tracker do time, e ruido faz ninguem

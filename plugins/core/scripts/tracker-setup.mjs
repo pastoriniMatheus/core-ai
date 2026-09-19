@@ -320,6 +320,27 @@ const local = readJson(localPath) || {};
 local.env = { ...(local.env || {}), [t.envPadrao]: token };
 writeFileSync(localPath, JSON.stringify(local, null, 2) + "\n");
 
+// GitHub Issues nao tem URL propria: o que identifica o tracker e o
+// REPOSITORIO. Sem `publish.repo` o tracker.mjs nao acha o card; sem os
+// padroes do `gh` o portao deixava `gh issue close` passar — o estado final,
+// que e o unico bloqueio sem escape do nucleo, aberto pelo caminho mais comum.
+// `gh issue comment` fica de fora de proposito: comentar nao muda estado.
+const github = {};
+if (tracker === "github") {
+  const remoto = spawnSync("git", ["remote", "get-url", "origin"], {
+    cwd: PROJETO, encoding: "utf8", windowsHide: true,
+  }).stdout || "";
+  const repo = remoto.trim().match(/github[.]com[:/]([^/]+\/[^/.\s]+)/)?.[1];
+  if (!repo) erro("nao achei um remote do GitHub em `origin` — passe --repo owner/nome");
+  github.repo = flag("repo", repo);
+  github.doneState = "closed";
+  github.forbiddenStates = ["close"]; // `gh issue close 12`: acrescenta aos padroes
+  github.padroes = [
+    "gh issue (edit|close|reopen|delete|transfer|lock|unlock|pin|unpin)",
+    `api[.]github[.]com/repos/${github.repo.replace(/\./g, "[.]")}/issues`,
+  ];
+}
+
 const core = readJson(corePath) || {};
 core.publish = {
   ...(core.publish || {}),
@@ -327,10 +348,12 @@ core.publish = {
   url: url || undefined,
   ...extra,
   tokenEnv: t.envPadrao,
+  ...(github.repo ? { repo: github.repo, doneState: github.doneState, forbiddenStates: github.forbiddenStates } : {}),
   trackerPatterns: [
     ...new Set([
       ...(core.publish?.trackerPatterns || []),
       ...(url ? [url.replace(/^https?:\/\//, "").replace(/\./g, "[.]").replace(/\/$/, "")] : []),
+      ...(github.padroes || []),
       `mcp__[^ ]*${tracker}`,
     ]),
   ],
