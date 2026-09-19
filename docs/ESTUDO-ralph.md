@@ -103,7 +103,7 @@ custos de forma diferente.
 
 Verificado na aceitação: **os hooks continuam rodando em sessão `-p` com essa
 flag**. A flag pula o diálogo de permissão do Claude Code, não os hooks — o
-`pre-publish-guard` barrou a abertura de PR em sessão exatamente assim, 25/25.
+`pre-publish-guard` barrou a abertura de PR em sessão exatamente assim, 26/26.
 
 Consequência para quem imaginar rodar o ralph *com* o núcleo instalado: o
 executor autônomo **não conseguiria abrir PR nem mover card**, porque ninguém

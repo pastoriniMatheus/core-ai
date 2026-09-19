@@ -304,6 +304,18 @@ const ANCORAS = [
   { frase: "conta google descartavel", arquivos: [
     "plugins/core/commands/core-externa.md", "plugins/core/commands/core-init.md", "scripts/externa.mjs"] },
 ];
+// E o numero de casos da suite de guardas, citado em prosa em tres lugares:
+// nao da para saber o numero certo sem rodar a suite (30 s), mas da para
+// exigir que os tres concordem — um atualizado e dois nao e o drift de sempre.
+const numeros = {
+  "README.md": /# (\d+) casos: as guardas/,
+  "docs/ROADMAP.md": /passa (\d+) testes de guarda/,
+  "docs/manual.src.html": /(\d+)\/\1 unidade/,
+};
+const citados = Object.entries(numeros).map(([a, re]) => `${a}=${ler(a).match(re)?.[1] ?? "?"}`);
+afirma("o numero de testes de guarda e o mesmo nos tres documentos",
+  new Set(citados.map((c) => c.split("=")[1])).size === 1, citados.join("  "));
+
 for (const { frase, arquivos } of ANCORAS) {
   const faltam = arquivos.filter((a) => !plano(ler(a)).includes(plano(frase)));
   afirma(`"${frase}" em ${arquivos.length} cópias`, !faltam.length, `falta em: ${faltam.join(", ")}`);

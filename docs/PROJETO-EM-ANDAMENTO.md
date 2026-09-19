@@ -72,17 +72,23 @@ reconhecer** — e vai bloquear mesmo depois de você ter testado.
 
 É o falso positivo mais provável no primeiro dia. Resolva primeiro.
 
-### `projectCheck` — só se a linguagem precisar
+### `projectCheck` — o que o núcleo roda ele mesmo
 
-Rust, Java, C# e Scala não têm verificação por arquivo confiável. Nessas, o build
-completo roda uma vez antes de encerrar:
+Dois usos. O primeiro: Rust, Java, C# e Scala não têm verificação por arquivo
+confiável, e nessas o build completo roda uma vez antes de encerrar. O segundo:
+**o comando de teste real**. `testPatterns` é "o agente *disse* que testou" — o
+hook só sabe que o comando apareceu no transcript, não se passou.
+`projectCheck` é "o núcleo *testou*": o hook roda o comando, e se um comando
+de teste passa ali, isso **é a prova** — mesmo que o agente não tenha rodado
+teste nenhum. O agente não consegue fingir verde.
 
 ```json
-{ "stopVerify": { "projectCheck": ["cargo check"] } }
+{ "stopVerify": { "projectCheck": ["make test", "cargo check"], "testPatterns": ["make test"] } }
 ```
 
 Em projeto grande, meça o tempo antes: um check de três minutos a cada
-encerramento vira um núcleo desligado na sexta-feira.
+encerramento vira um núcleo desligado na sexta-feira. Suíte lenta? Deixe em
+`projectCheck` só o subconjunto rápido, ou só o typecheck.
 
 ### `baseBranch` e `trackerPatterns`
 

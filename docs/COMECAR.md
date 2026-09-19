@@ -136,6 +136,12 @@ tem verificador por arquivo (Rust, Java, C# e Scala não têm; nesses casos é o
 **Se encerrar normalmente:** o `stop-verify` não está ligado, ou o comando de
 teste do projeto não está em `testPatterns`.
 
+**Antes de encerrar, veja o que o hook vai ver:** `/core-painel`. A linha
+`prova` diz se o `stop-verify` vai bloquear, e por quais arquivos — é o
+bloqueio antes de acontecer. O mesmo quadro roda ao vivo noutra janela
+(`node $AGENT_CORE_ROOT/scripts/painel.mjs`) e, se você quiser, no rodapé do
+Claude Code (o `/core-init` oferece a statusline).
+
 ### Teste 4 — portão de publicação
 
 > Implemente qualquer coisa pequena e abra a PR com `gh pr create --fill`.

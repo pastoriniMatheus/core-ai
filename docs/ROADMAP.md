@@ -3,7 +3,7 @@
 Estado em 17/09/2026, versão **0.8.2**. Nada aqui é bug conhecido: são coisas
 **nunca exercitadas** e decisões adiadas com motivo.
 
-O núcleo passa 239 testes de guarda, 36 de documentação e 26/26 na aceitação
+O núcleo passa 239 testes de guarda, 37 de documentação e 26/26 na aceitação
 com sessões reais do Claude Code. Isso prova o que foi testado — não o que não
 foi, e esta página existe para que a diferença entre as duas coisas fique visível.
 

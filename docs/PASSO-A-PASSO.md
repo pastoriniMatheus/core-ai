@@ -23,6 +23,11 @@ naquele onde você trabalha de verdade. O segundo comando acrescenta o que só f
 sentido por projeto — comando de teste, branch base, tracker, vocabulário — e
 não duplica os hooks.
 
+**Fora dos dois escopos:** a statusline do núcleo (fase, card, se o
+`stop-verify` vai bloquear) é preferência pessoal e vive em
+`~/.claude/settings.json`, do usuário. O `/core-init` oferece instalar; ela
+encadeia com a statusline que já existir, não substitui.
+
 ---
 
 ## Global (uma vez, para todos)
