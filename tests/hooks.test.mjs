@@ -962,6 +962,35 @@ else { failed++; console.log("  FAIL  projeto configurado -> nao deveria avisar"
   } else { failed++; console.log("  FAIL  raiz em dia -> repetiu o aviso"); }
 }
 
+// Quem trabalha por `claude --resume` durante dias nunca ve um `startup`. Com o
+// matcher so em startup|clear, o hook nunca rodava: `$AGENT_CORE_ROOT` ficou em
+// 0.5.0 com 0.8.3 instalado — neste repositorio. Em resume o hook corrige a
+// raiz e avisa pendencias, mas NAO entrega o checkpoint: o contexto continua.
+{
+  const dir = join(TMP, "resume");
+  mkdirSync(join(dir, ".claude", "core-state"), { recursive: true });
+  writeFileSync(join(dir, ".claude", "settings.local.json"), JSON.stringify({ env: { AGENT_CORE_ROOT: "C:/velho/0.5.0" } }));
+  writeFileSync(join(dir, ".claude", "core-state", "checkpoint.md"), "Sessão anterior: agora\nCard: CRM-1\n");
+  const sessao = (source) => spawnSync(process.execPath, [join(HOOKS, "session-start.mjs")], {
+    input: JSON.stringify({ cwd: dir, hook_event_name: "SessionStart", source }),
+    encoding: "utf8", timeout: 15000,
+  }).stdout || "";
+  const emResume = sessao("resume");
+  const raizNova = JSON.parse(readFileSync(join(dir, ".claude", "settings.local.json"), "utf8")).env.AGENT_CORE_ROOT;
+  if (raizNova !== "C:/velho/0.5.0" && emResume.includes("caminho do nucleo mudou")) {
+    passed++; console.log("  PASS  resume: corrige a raiz e avisa");
+  } else { failed++; console.log(`  FAIL  resume: raiz=${raizNova}`); }
+  if (!emResume.includes("trabalho interrompido")) {
+    passed++; console.log("  PASS  resume: nao entrega o checkpoint (o contexto continua)");
+  } else { failed++; console.log("  FAIL  resume: entregou o checkpoint"); }
+  if (sessao("startup").includes("trabalho interrompido")) {
+    passed++; console.log("  PASS  startup: entrega o checkpoint");
+  } else { failed++; console.log("  FAIL  startup: nao entregou o checkpoint"); }
+  const matcher = JSON.parse(readFileSync(join(HOOKS, "hooks.json"), "utf8")).hooks.SessionStart[0].matcher;
+  if (/(^|\|)resume(\||$)/.test(matcher)) { passed++; console.log("  PASS  hooks.json: SessionStart casa resume"); }
+  else { failed++; console.log(`  FAIL  hooks.json: matcher "${matcher}" nao casa resume`); }
+}
+
 // A mensagem do portao nao pode mandar rodar um caminho que nao existe.
 {
   const r = spawnSync(process.execPath, [join(HOOKS, "pre-externa-guard.mjs")], {

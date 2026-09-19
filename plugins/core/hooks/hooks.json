@@ -72,7 +72,7 @@
     ],
     "SessionStart": [
       {
-        "matcher": "startup|clear",
+        "matcher": "startup|resume|clear",
         "hooks": [
           {
             "type": "command",

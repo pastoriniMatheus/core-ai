@@ -70,7 +70,12 @@ function main(input) {
   const cfgPath = join(cwd, ".claude", "core.json");
   const pendencias = [];
   const cfg = loadConfig(cwd);
-  const retomada = checkpointRecente(cwd, cfg);
+  // Em `resume` o contexto da sessao continua: entregar o checkpoint dela mesma
+  // e ruido. Mas a raiz e as pendencias valem igual — e foi por isso que o hook
+  // passou a rodar em resume: quem trabalha por `claude --resume` durante dias
+  // nunca via um `startup`, e `$AGENT_CORE_ROOT` ficou em 0.5.0 com 0.8.3
+  // instalado. Medido neste repositorio.
+  const retomada = input.source === "resume" ? null : checkpointRecente(cwd, cfg);
 
   if (!existsSync(cfgPath)) {
     pendencias.push("`.claude/core.json` nao existe — o nucleo esta rodando so com defaults");

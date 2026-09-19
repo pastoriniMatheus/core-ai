@@ -111,7 +111,7 @@ const pluginInstalado = (() => {
     const vale = entradas.find(
       (e) => e.scope === "user" || !e.projectPath || PROJECT.startsWith(e.projectPath)
     );
-    return vale ? { escopo: vale.scope, versao: vale.version } : null;
+    return vale ? { escopo: vale.scope, versao: vale.version, caminho: (vale.installPath || "").split("\\").join("/") } : null;
   } catch {
     return null;
   }
@@ -168,6 +168,21 @@ if (!existsSync(settingsPath)) {
     } else {
       OK(`plugin instalado (escopo ${pluginInstalado.escopo})`,
          `v${pluginInstalado.versao} — entrega hooks, skills e comandos sem tocar no settings.json do projeto`);
+    }
+    // Projeto instalado por `install.mjs` (hooks locais) E com o plugin: cada
+    // hook roda duas vezes, e no Stop qualquer bloqueio vence — a versao velha
+    // do clone bloqueia o que a nova liberou. Medido na aceitacao.
+    if (eventos.length) {
+      WARN(`hooks do core tambem em ${settingsLocal?.hooks ? "settings.local.json" : "settings.json"} — rodam DUAS vezes`,
+           "com o plugin instalado, apague a chave `hooks` desse arquivo (ou rode install.mjs --marketplace)");
+    }
+    // A variavel que os comandos usam aponta para a pasta da versao ANTERIOR
+    // do cache ate a proxima sessao. Se a pasta sumiu, /core-* falha com
+    // "Cannot find module" e o motivo nao aparece em lugar nenhum.
+    const raiz = settingsLocal?.env?.AGENT_CORE_ROOT;
+    if (raiz && pluginInstalado.caminho && raiz.replace(/\/$/, "") !== pluginInstalado.caminho.replace(/\/$/, "")) {
+      WARN(`AGENT_CORE_ROOT aponta para outra versao (${raiz.split("/").pop()}; instalada v${pluginInstalado.versao})`,
+           "os comandos /core-* rodam scripts velhos ate a proxima sessao — abra o projeto de novo (vale em --resume)");
     }
   } else if (eventos.length >= 4) {
     OK(`hooks do core ligados (${settingsLocal?.hooks ? "settings.local.json" : "settings.json"})`, eventos.join(", "));

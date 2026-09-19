@@ -136,6 +136,21 @@ não ligou — rode `claude plugin details core@agent-core`.
 **Cuidado:** `marketplace remove` **desinstala o plugin junto**. Para desligar sem
 perder, use `disable`.
 
+### Depois de atualizar: o que fazer nos projetos que já usavam o núcleo
+
+**Nada a instalar.** O plugin é do usuário: um `plugin update` vale para todos os
+projetos desta máquina. O que resta é por projeto, e é pouco:
+
+| | Por quê |
+|---|---|
+| **Abra o projeto uma vez** (vale em `--resume`) | `$AGENT_CORE_ROOT` aponta para a pasta da versão **anterior** até o `session-start` corrigir; até lá os `/core-*` rodam scripts velhos. O `/core-doctor` acusa |
+| `/core-doctor` | confirma a versão e acusa hook **duplicado** (projeto instalado por `install.mjs` + plugin: cada hook roda duas vezes, e no `Stop` qualquer bloqueio vence) |
+| `/core-setup`, se quiser o novo | põe o comando de teste real em `projectCheck` — o núcleo passa a rodar o teste ele mesmo, e isso vale como prova. Sem isso, tudo continua como antes |
+
+Projeto instalado pelo clone (`install.mjs`, hooks em `settings.local.json`) **e**
+com o plugin: apague a chave `hooks` do `settings.local.json`, ou rode
+`install.mjs <projeto> --marketplace`. Um só caminho para os hooks.
+
 Quando uma guarda atrapalhar num repositório que você só foi ler, desligue **só
 ela**, naquele projeto, em `.claude/core.json`:
 
@@ -309,7 +324,7 @@ Só necessário para **editar**, não para usar.
 ```bash
 git clone https://github.com/pastoriniMatheus/core-ai.git
 cd core-ai
-node tests/hooks.test.mjs              # 248 casos: as guardas
+node tests/hooks.test.mjs              # 252 casos: as guardas
 node tests/docs.test.mjs               # a documentacao ainda descreve o que existe?
 node scripts/aceitacao.mjs --offline   # instalação e guardas
 node scripts/aceitacao.mjs             # + sessões reais do Claude Code, ~10 min
