@@ -287,7 +287,16 @@ console.log("\n=== âncoras de drift ===");
 // Ideia portada do check-init-drift do bc-harness. A comparação normaliza
 // acento, caixa, negrito e quebra de linha: a skill escreve "à mão" e o hook
 // escreve "a mao", e a regra é a mesma.
-const plano = (t) => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+// O manual e HTML: `<code>` no meio da frase e `&aacute;` no lugar da letra
+// faziam qualquer ancora falhar nele \u2014 e o manual e justamente o documento que
+// se compartilha. Tag vira espaco; entidade de letra acentuada vira a letra
+// (o nome da entidade comeca por ela: aacute -> a, ccedil -> c); o resto das
+// entidades vira espaco. Depois disso o texto do manual e do README comparam.
+const plano = (t) => String(t)
+  .replace(/<[^>]+>/g, " ")
+  .replace(/&([aeiouyncAEIOUYNC])(acute|grave|circ|tilde|uml|cedil|ring|slash);/g, "$1")
+  .replace(/&[a-zA-Z]+;|&#\d+;/g, " ")
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
   .toLowerCase().replace(/[*`_]/g, "").replace(/\s+/g, " ");
 const ANCORAS = [
   { frase: "quem revisa move a mao, depois de olhar", arquivos: [
@@ -301,6 +310,8 @@ const ANCORAS = [
     "scripts/externa.mjs", "plugins/core/hooks/pre-externa-guard.mjs"] },
   { frase: "credencial de conta inteira", arquivos: [
     "plugins/core/commands/core-externa.md", "plugins/core/commands/core-init.md", "scripts/externa.mjs"] },
+  { frase: "um `plugin update` vale para todos os projetos desta maquina", arquivos: [
+    "README.md", "docs/manual.src.html"] },
   { frase: "conta google descartavel", arquivos: [
     "plugins/core/commands/core-externa.md", "plugins/core/commands/core-init.md", "scripts/externa.mjs"] },
 ];

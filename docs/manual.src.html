@@ -1168,6 +1168,21 @@ node scripts/baseline.mjs --days 7 --compare antes</code></pre>
 claude plugin update core@agent-core</code></pre>
       <p>S&atilde;o dois comandos: atualizar o marketplace n&atilde;o atualiza o plugin.</p>
 
+      <h4>E nos projetos que j&aacute; usavam o n&uacute;cleo?</h4>
+      <p><strong>Nada a instalar.</strong> O plugin &eacute; do usu&aacute;rio: um <code>plugin update</code> vale para todos os projetos desta m&aacute;quina. O que resta &eacute; por projeto, e &eacute; pouco:</p>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>O qu&ecirc;</th><th>Por qu&ecirc;</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Abrir o projeto uma vez</strong> (vale em <code>--resume</code>)</td><td><code>$AGENT_CORE_ROOT</code> aponta para a pasta da vers&atilde;o <strong>anterior</strong> at&eacute; o <code>session-start</code> corrigir; at&eacute; l&aacute; os <code>/core-*</code> rodam scripts velhos</td></tr>
+            <tr><td><code>/core-doctor</code></td><td>confirma a vers&atilde;o e acusa hook <strong>duplicado</strong> &mdash; projeto instalado por <code>install.mjs</code> <em>e</em> com o plugin: cada hook roda duas vezes, e no <code>Stop</code> qualquer bloqueio vence, ent&atilde;o a vers&atilde;o velha barra o que a nova liberou</td></tr>
+            <tr><td><code>/core-setup</code>, s&oacute; se quiser o novo</td><td>p&otilde;e o comando de teste real em <code>projectCheck</code>. Sem isso, tudo continua como antes</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Projeto com hooks em <code>settings.local.json</code> <strong>e</strong> com o plugin: apague a chave <code>hooks</code> desse arquivo, ou rode <code>install.mjs &lt;projeto&gt; --marketplace</code>. Um s&oacute; caminho para os hooks.</p>
+      <p class="small">O matcher do <code>session-start</code> era <code>startup|clear</code>, e quem trabalha por <code>claude --resume</code> durante dias nunca v&ecirc; um <em>startup</em>: a vari&aacute;vel ficou tr&ecirc;s vers&otilde;es atr&aacute;s neste pr&oacute;prio reposit&oacute;rio, com todo <code>/core-*</code> rodando scripts velhos. Por isso o hook passou a rodar em <code>resume</code> tamb&eacute;m &mdash; corrigindo a raiz, sem repetir o checkpoint.</p>
+
       <h3>Conferir</h3>
 <pre><code>/core-doctor</code></pre>
       <p>Diz o que est&aacute; de fato ativo: hooks ligados, skills presentes, vers&atilde;o do plugin em dia, e o que ainda falta configurar. Uma configura&ccedil;&atilde;o de agente falha em sil&ecirc;ncio &mdash; nada quebra visivelmente, ela s&oacute; para de ajudar. Este comando torna o sil&ecirc;ncio vis&iacute;vel.</p>
