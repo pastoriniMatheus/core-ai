@@ -151,6 +151,14 @@ Projeto instalado pelo clone (`install.mjs`, hooks em `settings.local.json`) **e
 com o plugin: apague a chave `hooks` do `settings.local.json`, ou rode
 `install.mjs <projeto> --marketplace`. Um só caminho para os hooks.
 
+### No dia a dia
+
+O núcleo fica quieto enquanto está tudo certo, e quando para diz por quê.
+[`docs/DIA-A-DIA.md`](docs/DIA-A-DIA.md) lista cada bloqueio **pela mensagem que
+aparece na sua tela**, com a causa e o que você responde — mais o que nunca
+destrava, o que cada escape registra, e como distinguir falso positivo de
+bloqueio legítimo.
+
 Quando uma guarda atrapalhar num repositório que você só foi ler, desligue **só
 ela**, naquele projeto, em `.claude/core.json`:
 
@@ -461,6 +469,7 @@ por construção, não por disciplina.
 
 | | |
 |---|---|
+| [`docs/DIA-A-DIA.md`](docs/DIA-A-DIA.md) | **O uso diário** — o que roda sozinho, por que o agente parou, e o que você responde |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | **O que falta** — o que nunca foi exercitado, e o que foi adiado com motivo |
 | [`docs/ESTUDO-ralph.md`](docs/ESTUDO-ralph.md) | Estudo de decisão: o modo interativo do núcleo × o modo autônomo por fases (ralph) |
 | [`docs/MAQUINA-NOVA.md`](docs/MAQUINA-NOVA.md) | Máquina do zero: pré-requisitos até a primeira guarda funcionando |

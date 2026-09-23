@@ -332,6 +332,31 @@ for (const { frase, arquivos } of ANCORAS) {
   afirma(`"${frase}" em ${arquivos.length} cópias`, !faltam.length, `falta em: ${faltam.join(", ")}`);
 }
 
+console.log("\n=== o dia a dia cita mensagens que existem ===");
+
+// `DIA-A-DIA.md` é organizado pela mensagem que o usuário vê na tela. Uma
+// mensagem reescrita no hook e não no documento é pior do que documento
+// nenhum: manda procurar um texto que nunca vai aparecer. Aqui cada citação
+// entre crases tem de bater com o início de uma mensagem real de algum hook.
+//
+// A comparação para no primeiro `${`: o resto da mensagem é interpolado, e o
+// documento cita só a parte estável.
+{
+  const hooksDir = join(ROOT, "plugins", "core", "hooks");
+  const fonte = readdirSync(hooksDir)
+    .filter((f) => f.endsWith(".mjs"))
+    .map((f) => ler(join("plugins", "core", "hooks", f)))
+    .join("\n");
+  const reais = [...fonte.matchAll(/\[core\][^\n]*/g)]
+    .map((m) => m[0].split("${")[0].trim());
+
+  const citadas = [...ler("docs/DIA-A-DIA.md").matchAll(/`(\[core\][^`]*)`/g)].map((m) => m[1].trim());
+  const orfas = citadas.filter((c) => !reais.some((r) => r.startsWith(c)));
+  afirma(`as ${citadas.length} mensagens citadas no dia a dia existem nos hooks`, !orfas.length,
+    orfas.join(" | "));
+  afirma("o dia a dia cita as mensagens principais", citadas.length >= 8, `${citadas.length} citações`);
+}
+
 console.log("\n=== versões coerentes ===");
 
 // A versão é o único sinal que `claude plugin update` usa. Se os dois arquivos
